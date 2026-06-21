@@ -1,9 +1,10 @@
-import { Client } from "pg"
-import dotenv from "dotenv"
+import pg from "pg";
+const { Pool } = pg;
+import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
-export const dbClient = new Client({
+export const dbClient = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
     database: process.env.DB_NAME,
@@ -11,10 +12,6 @@ export const dbClient = new Client({
     port: process.env.DB_PORT,
 });
 
-dbClient.connect()
-    .then(() => {
-        if (process.env.NODE_ENV !== "test") {
-            console.log("Connected to PostgreSQL database");
-        }
-    })
-    .catch((err) => console.error("Failed to connect to database:", err));
+// With Pool, we don't need to call .connect() manually.
+// It will connect automatically when the first query is made.
+// This prevents the SASL race condition during parallel tests.
