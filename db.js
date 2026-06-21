@@ -14,4 +14,6 @@ export const dbClient = new Pool({
 
 // With Pool, we don't need to call .connect() manually.
 // It will connect automatically when the first query is made.
-// This prevents the SASL race condition during parallel tests.
+dbClient.query("SELECT NOW()")
+    .then(() => console.log("PostgreSQL Database connected successfully"))
+    .catch((err) => console.error("Database connection failed:", err));

@@ -52,3 +52,36 @@ To run the automated test suite and view the results, execute the following comm
 
 ```bash
 npm test
+```
+
+## 🏎️ Load Testing (k6)
+
+For traffic and load testing, we use **k6**. The load test script simulates multiple virtual users to stress-test the URL shortening endpoint.
+
+### 📂 Load Test Structure
+* `shorten-test.js` (Located at the root folder)
+
+### 🚀 Running Load Tests
+Ensure you have **k6** installed on your machine. If not installed, you can install it using snap:
+
+```bash
+sudo snap install k6
+```
+
+To run the load test, use the following command:
+### 📊 Scalability Comparison
+
+As we increase the number of concurrent virtual users (VUs), we can track how the system scales:
+
+| Concurrent Users (VUs) | P50 (Median) | P90 | P95 | P99 | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **10 VUs** | 5.74 ms | 10.33 ms | 12.63 ms | 19.16 ms | ✅ 100% Success |
+| **100 VUs** | 54.31 ms | 81.56 ms | 97.1 ms | 139.03 ms | ✅ 100% Success |
+| **1,000 VUs** | 634.09 ms | 884.73 ms | 1.04 s | 2.76 s | ✅ 100% Success |
+| **10,000 VUs** | -- | -- | -- | -- | ❌ **TIMEOUT** |
+
+### 🔍 Key Takeaways
+1. **Linear Scaling**: Latency increases roughly 10x for every 10x increase in users. This suggests the database connection pool or the single-threaded nature of Node.js is the primary bottleneck.
+2. **10k Failure**: The `10,000 VU` test failed due to `dial: i/o timeout`. This is caused by hitting the Operating System's limit for open sockets and the database's limit for concurrent queries. To handle this load, we would need horizontal scaling (multiple server instances) and a connection pooler like PgBouncer.
+
+---
