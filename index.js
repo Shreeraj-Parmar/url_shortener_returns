@@ -17,6 +17,11 @@ app.get("/", (req, res) => {
     res.send("Url Shortener Server is running");
 });
 
+app.get("/hello", (req, res) => {
+    res.json({
+        message: "Hello World"
+    });
+});
 
 
 const generateShortUrl = () => {
@@ -72,9 +77,8 @@ app.get("/redirect", async (req, res) => {
 });
 
 
-
-
-
-app.listen(PORT, () => {
-    console.log(`Url Shortener Server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, () => {
+        console.log(`Url Shortener Server is running on port ${PORT}`);
+    });
+}

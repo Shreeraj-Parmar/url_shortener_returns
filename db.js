@@ -12,5 +12,9 @@ export const dbClient = new Client({
 });
 
 dbClient.connect()
-    .then(() => console.log("Connected to PostgreSQL database"))
+    .then(() => {
+        if (process.env.NODE_ENV !== "test") {
+            console.log("Connected to PostgreSQL database");
+        }
+    })
     .catch((err) => console.error("Failed to connect to database:", err));
