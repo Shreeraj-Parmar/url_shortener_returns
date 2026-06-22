@@ -21,7 +21,7 @@ export const shortenUrl = async (req, res) => {
     try {
         // First check the URL is already is available? if yes then send short code from Db
 
-        const existingUrl = await prisma.url_shortener.findUnique({
+        const existingUrl = await prisma.url_shortener.findFirst({
             where: {
                 original_url: url,
             },

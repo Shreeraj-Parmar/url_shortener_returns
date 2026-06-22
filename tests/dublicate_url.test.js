@@ -24,16 +24,21 @@ test("shorten URL and redirect", async () => {
     const shortenResponse = await request(app)
         .post("/shorten")
         .send({
-            url: "https://example79856985666.com"
+            url: "https://example798ddddd56985666.com"
         });
 
     const shortCode = shortenResponse.body.short_code;
 
-    // GET
-    const redirectResponse = await request(app)
-        .get(`/redirect?code=${shortCode}`);
+    expect(shortenResponse.status).toBe(200);
 
-    // CHECK
-    expect(redirectResponse.status).toBe(302);
-    expect(redirectResponse.headers.location).toBe("https://example79856985666.com");
+    // Test dublicate url
+
+    const shortenResponse2 = await request(app)
+        .post("/shorten")
+        .send({
+            url: "https://example798ddddd56985666.com"
+        });
+
+    expect(shortenResponse2.status).toBe(200);
+    expect(shortenResponse2.body.short_code).toBe(shortCode);
 });
