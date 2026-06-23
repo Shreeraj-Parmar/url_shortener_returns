@@ -71,7 +71,11 @@ sudo snap install k6
 
 To run the load test, use the following command:
 
-### 📊 Scalability Comparison
+```bash
+k6 run shorten-test.js
+```
+
+### 📊 Scalability Comparison (Local DB)
 
 As we increase the number of concurrent virtual users (VUs), we can track how the system scales:
 
@@ -131,3 +135,5 @@ node test.prisma.js
 ```
 
 This file (`test.prisma.js`) fetches the first 10 records from the `url_shortener` table using Prisma and prints them to the console.
+
+

@@ -15,11 +15,13 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.8.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "pg": "^8.22.0",
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "jest": "^30.4.2",
