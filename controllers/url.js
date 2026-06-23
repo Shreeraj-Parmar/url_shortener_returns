@@ -16,6 +16,12 @@ export const shortenUrl = async (req, res) => {
         return res.status(400).json({ error: 'URL is required' })
     }
 
+    // Is valid url
+    const urlRegex = /^(http|https):\/\/[^ "\s]+\.[^ "\s]+$/
+    if (!urlRegex.test(url)) {
+        return res.status(400).json({ error: 'Invalid URL' })
+    }
+
     const shortUrl = generateShortUrl()
 
     try {
