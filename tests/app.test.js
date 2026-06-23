@@ -1,9 +1,11 @@
 import request from "supertest";
 import app from "../index.js";
-import { dbClient } from "../db.js";
+import { prismaClient } from "../prismaClient.js";
+
+const prisma = prismaClient;
 
 afterAll(async () => {
-    await dbClient.end();
+    await prisma.$disconnect();
 });
 
 test("GET /hello", async () => {
