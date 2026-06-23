@@ -71,3 +71,44 @@ export const redirectUrl = async (req, res) => {
         res.status(500).json({ error: 'Failed to redirect URL' })
     }
 }
+
+export const softDeleteUrl = async (req, res) => {
+    // Extract id from url params
+
+    const shortCode = req.params.shortCode
+
+    if (!shortCode) {
+        return res.status(400).json({ error: 'shortCode is required' })
+    }
+
+    // Check id is available
+
+    try {
+        const dbRes = await prisma.url_shortener.findFirst({
+            where: {
+                short_code: shortCode,
+                deleted_at: null,
+            },
+        })
+
+        if (!dbRes) {
+            return res.status(404).json({ error: 'URL not found' })
+        }
+
+        // Update db
+        await prisma.url_shortener.update({
+            where: {
+                short_code: shortCode,
+            },
+            data: {
+                deleted_at: new Date(),
+            },
+        })
+
+        // Send response
+        res.status(204).send()
+    } catch (error) {
+        console.error('Error soft deleting URL:', error)
+        res.status(500).json({ error: 'Failed to delete URL' })
+    }
+}

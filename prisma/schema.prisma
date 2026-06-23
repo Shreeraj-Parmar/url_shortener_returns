@@ -14,4 +14,5 @@ model url_shortener {
   created_at   DateTime? @default(now()) @db.Timestamp(6)
   updated_at   DateTime? @default(now()) @db.Timestamp(6)
   visit_count  Int?      @default(0)
+  deleted_at   DateTime? @db.Timestamptz(6)
 }
