@@ -75,9 +75,9 @@ To run the load test, use the following command:
 k6 run shorten-test.js
 ```
 
-### 📊 Scalability Comparison (Local DB)
+### 📊 Scalability Comparison (Local Testing)
 
-As we increase the number of concurrent virtual users (VUs), we can track how the system scales:
+As we increase the number of concurrent virtual users (VUs) testing against a local Node.js server, we can track how the system scales:
 
 | Concurrent Users (VUs) | P50 (Median) | P90       | P95      | P99       | Status          |
 | :--------------------- | :----------- | :-------- | :------- | :-------- | :-------------- |
@@ -86,10 +86,31 @@ As we increase the number of concurrent virtual users (VUs), we can track how th
 | **1,000 VUs**          | 634.09 ms    | 884.73 ms | 1.04 s   | 2.76 s    | ✅ 100% Success |
 | **10,000 VUs**         | --           | --        | --       | --        | ❌ **TIMEOUT**  |
 
-### 🔍 Key Takeaways
+### 📊 Scalability Comparison (Railway + Neon Cloud)
 
-1. **Linear Scaling**: Latency increases roughly 10x for every 10x increase in users. This suggests the database connection pool or the single-threaded nature of Node.js is the primary bottleneck.
-2. **10k Failure**: The `10,000 VU` test failed due to `dial: i/o timeout`. This is caused by hitting the Operating System's limit for open sockets and the database's limit for concurrent queries. To handle this load, we would need horizontal scaling (multiple server instances) and a connection pooler like PgBouncer.
+As we increase the number of concurrent virtual users (VUs) hitting the live cloud deployment, we can track how the system scales over a 30s duration:
+
+| Concurrent Users (VUs) | P50 (Median) | P90       | P95      | P99       | Status          |
+| :--------------------- | :----------- | :-------- | :------- | :-------- | :-------------- |
+| **10 VUs**             | 552.59 ms    | 824.68 ms | 996.45 ms| 1.84 s    | ✅ 100% Success |
+| **100 VUs**            | 3.92 s       | 4.42 s    | 4.66 s   | 4.87 s    | ✅ 100% Success |
+| **1,000 VUs**          | 38.45 s      | 40.34 s   | 40.53 s  | 40.66 s   | ✅ 100% Success |
+| **10,000 VUs**         | --           | --        | --       | --        | ❌ **Local Error** |
+
+### 🔍 Why is the Cloud test so much slower than Local?
+
+It seems shocking that the local computer handled 1,000 users in ~600ms, while the cloud took 38 seconds. This comes down to two major bottlenecks:
+
+1. **The "Network Hop" Problem (Geographic Distance)**
+   * **Local Test (~5ms):** The k6 load tester and the Node.js server are running on the exact same laptop. The request instantly hits the server with 0 network delay, and the server quickly asks the Neon database for the info.
+   * **Cloud Test (~550ms):** When you run k6 locally in India, your laptop sends a request across the ocean to a Railway server in the USA or Europe. That Railway server then sends a request to your Neon database in AWS. Finally, the response travels all the way back across the ocean to India. The speed of light and fiber optic cables dictate that this round trip will take at least 300-500ms for *every single request*.
+
+2. **The CPU Problem (Node.js is Single Threaded)**
+   * **Local Test:** Your local computer likely has 8+ CPU cores and gigabytes of RAM. It easily handles opening hundreds of database connections and processing thousands of concurrent requests.
+   * **Cloud Test:** Railway's free tier provides a tiny virtual machine (e.g. 0.5 vCPU and 512MB RAM). When 1,000 requests hit it simultaneously, that tiny CPU is completely overwhelmed. Prisma limits database connections to protect the database (default is `num_physical_cpus * 2 + 1`). If the server has 1 CPU, it can only process ~3 requests at a time. The other 997 requests are forced to wait in a massive queue for over 30 seconds before the server even looks at them!
+
+3. **Why did the 10,000 VU test fail?**
+   The 10,000 VU test failed instantly with `dial tcp: cannot assign requested address`. This means **your local computer actually crashed the test, not the server**. Operating systems have a hard limit on how many outgoing network ports they can open simultaneously. When you asked k6 to open 10,000 concurrent network requests to a live IP address, your laptop's network driver ran out of open ports and blocked the requests!
 
 ---
 

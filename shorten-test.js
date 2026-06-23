@@ -1,7 +1,7 @@
 import http from 'k6/http'
 
 export const options = {
-    vus: 1,
+    vus: 10,
     duration: '30s',
     summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 }
