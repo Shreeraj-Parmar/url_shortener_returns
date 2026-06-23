@@ -16,3 +16,11 @@ test('404 Not Found', async () => {
     expect(redirectResponse.status).toBe(404)
     expect(redirectResponse.body.error).toBe('URL not found')
 })
+
+test('Missing params', async () => {
+
+    const redirectResponse = await request(app).get(`/redirect`)
+
+    expect(redirectResponse.status).toBe(400)
+    expect(redirectResponse.body.error).toBe('Code is required')
+})

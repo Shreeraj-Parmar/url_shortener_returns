@@ -60,3 +60,35 @@ test('Invalid URL:3', async () => {
     expect(shortenResponse.status).toBe(400)
     expect(shortenResponse.body.error).toBe('Invalid URL')
 })
+
+
+test('Empty Stripng', async () => {
+    // POST
+    const shortenResponse = await request(app).post('/shorten').send({
+        url: '',
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('URL is required')
+})
+
+test('null', async () => {
+    // POST
+    const shortenResponse = await request(app).post('/shorten').send({
+        url: null,
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('URL is required')
+})
+
+
+test('URL includes spaces', async () => {
+    // POST
+    const shortenResponse = await request(app).post('/shorten').send({
+        url: 'https://sdfasdf sdfsdf.com',
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('Invalid URL')
+})
