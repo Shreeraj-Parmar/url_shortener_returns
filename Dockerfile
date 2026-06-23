@@ -23,5 +23,5 @@ COPY . .
 ENV NODE_ENV=production
 
 # Railway dynamically sets the PORT environment variable.
-# Start the application
-CMD ["npm", "start"]
+# Start the application using PM2 to utilize all available CPU cores
+CMD ["npx", "pm2-runtime", "index.js", "-i", "max"]

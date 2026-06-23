@@ -120,7 +120,11 @@ This project uses **Prisma** as the ORM for database operations. Since we use **
 
 ### Why do we need extra libraries?
 
-Prisma v7 uses a **client engine** that no longer accepts a direct `datasourceUrl` in the constructor. Instead, it requires either an `adapter` or an `accelerateUrl`. Since Neon is a serverless database, we use the Neon-specific adapter which communicates over WebSockets.
+Prisma v7 uses a **client engine** that no longer accepts a direct `url` inside `schema.prisma`. Instead, it requires you to pass an `adapter` directly into the `PrismaClient` constructor. 
+
+Initially, this project used `@neondatabase/serverless` which connects to the database via WebSockets. However, native Node.js (running in our Railway Docker container) does not fully support this without external polyfills, leading to `fetch failed` errors. 
+
+To achieve maximum stability and performance on our server, we switched to **`@prisma/adapter-pg`**, which connects directly over TCP. This avoids WebSocket limits and is natively supported by Node.js 20+.
 
 The following libraries are required:
 
@@ -128,8 +132,8 @@ The following libraries are required:
 | :------------------------- | :-------------------------------------------------------- |
 | `prisma`                   | Prisma CLI for schema management and client generation    |
 | `@prisma/client`           | The Prisma Client for querying the database               |
-| `@prisma/adapter-neon`     | Adapter that connects Prisma to Neon DB                   |
-| `@neondatabase/serverless` | Neon's serverless driver (used internally by the adapter) |
+| `pg`                       | The standard PostgreSQL driver for Node.js |
+| `@prisma/adapter-pg`       | Instructs Prisma to use the `pg` driver directly over TCP |
 
 ### Environment Variable
 
