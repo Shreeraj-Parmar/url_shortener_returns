@@ -12,8 +12,10 @@ const generateShortUrl = () => {
 export const shortenUrl = async (req, res) => {
     const { url } = req.body
 
-    if (!url) {
-        return res.status(400).json({ error: 'URL is required' })
+    const apiKey = req.headers['x-api-key']
+
+    if (!url || !apiKey) {
+        return res.status(400).json({ error: 'URL and API key are required' })
     }
 
     // Is valid url
@@ -22,6 +24,21 @@ export const shortenUrl = async (req, res) => {
         return res.status(400).json({ error: 'Invalid URL' })
     }
 
+    const user = await prisma.users.findUnique({
+        where: {
+            api_key: apiKey,
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid API key' })
+    }
+
+    const userId = user.id
+
     const shortUrl = generateShortUrl()
 
     try {
@@ -29,6 +46,7 @@ export const shortenUrl = async (req, res) => {
             data: {
                 original_url: url,
                 short_code: shortUrl,
+                user_id: userId,
             },
         })
 
@@ -90,11 +108,32 @@ export const redirectUrl = async (req, res) => {
 export const softDeleteUrl = async (req, res) => {
     // Extract id from url params
 
-    const shortCode = req.params.shortCode
+    const shortCode = req?.params?.shortCode
+
+    const apiKey = req.headers['x-api-key']
 
     if (!shortCode) {
         return res.status(400).json({ error: 'shortCode is required' })
     }
+
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API key is required' })
+    }
+
+    const user = await prisma.users.findUnique({
+        where: {
+            api_key: apiKey,
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid API key' })
+    }
+
+    const userId = user.id
 
     // Check id is available
 
@@ -103,6 +142,10 @@ export const softDeleteUrl = async (req, res) => {
             where: {
                 short_code: shortCode,
                 deleted_at: null,
+                user_id: userId,
+            },
+            select: {
+                id: true,
             },
         })
 
@@ -111,14 +154,16 @@ export const softDeleteUrl = async (req, res) => {
         }
 
         // Update db
-        await prisma.url_shortener.update({
+        const update_db = await prisma.url_shortener.update({
             where: {
-                short_code: shortCode,
+                id: dbRes.id,
             },
             data: {
                 deleted_at: new Date(),
             },
         })
+
+        console.log('----------------------------------------->', update_db)
 
         // Send response
         res.status(204).send()

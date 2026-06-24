@@ -17,18 +17,29 @@ The application connects to PostgreSQL using the following environment variables
 
 You can check the `db.js` file for the database connection configuration.
 
-## Database Table
+## Database Tables
 
-Make sure you have created a PostgreSQL table with the following columns:
+Make sure you have created the following PostgreSQL tables:
 
-1. `id`
+### `users`
+1. `id` (Primary Key)
+2. `name`
+3. `email` (Unique)
+4. `api_key` (Unique)
+5. `created_at`
+
+### `url_shortener`
+1. `id` (Primary Key)
 2. `original_url`
 3. `short_code`
 4. `created_at`
 5. `updated_at`
 6. `visit_count`
+7. `deleted_at`
+8. `last_accessed_at`
+9. `user_id` (Foreign Key referencing `users(id)`)
 
-**Important:** The code uses the table name `url_shortener`. Please use this exact table name; otherwise, the application will not work correctly.
+**Important:** The code uses the table names `url_shortener` and `users`. Please use these exact table names; otherwise, the application will not work correctly.
 
 ## Run the Project
 
@@ -178,6 +189,7 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 ### 3. Shorten URL
 - **Method:** `POST`
 - **Path:** `/shorten`
+- **Headers:** `x-api-key` (Required)
 - **Description:** Creates a short URL from an original URL.
 
 ### 4. Redirect URL
@@ -188,6 +200,7 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 ### 5. Soft Delete URL
 - **Method:** `DELETE`
 - **Path:** `/shorten` or `/shorten/:shortCode`
+- **Headers:** `x-api-key` (Required)
 - **Description:** Performs a soft delete on a shortened URL record.
 
 ### 6. Analytics

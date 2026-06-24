@@ -9,13 +9,16 @@ afterAll(async () => {
 })
 
 test('Delete url', async () => {
-    const shortCode = 'wTKPNqvA' // that is available in DB // make sure change this otherwise test will fail.
+    const shortCode = 'rrrxWx' // that is available in DB // make sure change this otherwise test will fail.
+    const apiKey = 'sk_test_3333333333333333'
 
-    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`)
+    // Delete url
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
 
     expect(deleteResponse.status).toBe(204)
     expect(deleteResponse.body).toEqual({})
 })
+
 test('shortCode is required', async () => {
     const deleteResponse = await request(app).delete(`/shorten/`)
 
@@ -23,10 +26,41 @@ test('shortCode is required', async () => {
     expect(deleteResponse.body.error).toBe('shortCode is required')
 })
 
-test('Delete non-exist url', async () => {
-    const shortCode = 'hhy9lmsxeeeeeeeeeee' // that is not available in DB
+test('Delete url with empty api key', async () => {
+    const shortCode = 'dLeIlU'
+    const apiKey = ''
 
-    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`)
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(400)
+    expect(deleteResponse.body.error).toBe('API key is required')
+})
+
+test('Delete url with invalid api key', async () => {
+    const shortCode = 'dLeIlU'
+    const apiKey = 'invalid'
+
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(401)
+    expect(deleteResponse.body.error).toBe('Invalid API key')
+})
+
+test('Valid APi but temparig other user short url', async () => {
+    const shortCode = 'YpY7Du' // user A's short url
+    const apiKey = 'sk_test_1111111111111111' // user B's api key
+
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(404)
+    expect(deleteResponse.body.error).toBe('URL not found')
+})
+
+test('Delete already deleted url', async () => {
+    const shortCode = 'rrrxWx' // that is already deleted in DB
+    const apiKey = 'sk_test_3333333333333333'
+
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
 
     expect(deleteResponse.status).toBe(404)
     expect(deleteResponse.body.error).toBe('URL not found')
