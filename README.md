@@ -161,4 +161,37 @@ node test.prisma.js
 
 This file (`test.prisma.js`) fetches the first 10 records from the `url_shortener` table using Prisma and prints them to the console.
 
+## API Documentation
+
+### 1. Root Endpoint
+- **Method:** `GET`
+- **Path:** `/`
+- **Description:** Checks if the server is running.
+- **Response:** `Url Shortener Server is running`
+
+### 2. Hello World
+- **Method:** `GET`
+- **Path:** `/hello`
+- **Description:** Returns a greeting message.
+- **Response:** JSON object `{"message": "Hello World"}`
+
+### 3. Shorten URL
+- **Method:** `POST`
+- **Path:** `/shorten`
+- **Description:** Creates a short URL from an original URL.
+
+### 4. Redirect URL
+- **Method:** `GET`
+- **Path:** `/redirect`
+- **Description:** Redirects to the original URL based on the provided short code (usually as a query parameter or path variable).
+
+### 5. Soft Delete URL
+- **Method:** `DELETE`
+- **Path:** `/shorten` or `/shorten/:shortCode`
+- **Description:** Performs a soft delete on a shortened URL record.
+
+### 6. Analytics
+- **Method:** `GET`
+- **Path:** `/analytics`
+- **Description:** Retrieves an analytics report for shortened URLs.
 
