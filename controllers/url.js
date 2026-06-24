@@ -65,11 +65,30 @@ export const redirectUrl = async (req, res) => {
             where: {
                 short_code: code,
             },
+            select: {
+                id: true,
+                visit_count: true,
+                original_url: true,
+            },
         })
 
         if (!prisma_res) {
             return res.status(404).json({ error: 'URL not found' })
         }
+
+        console.log('----------------------------------------->', prisma_res)
+
+        // Increment visit_count field by 1
+        await prisma.url_shortener.update({
+            where: {
+                id: prisma_res.id,
+            },
+            data: {
+                visit_count: {
+                    increment: 1,
+                },
+            },
+        })
 
         res.redirect(prisma_res.original_url)
     } catch (error) {
