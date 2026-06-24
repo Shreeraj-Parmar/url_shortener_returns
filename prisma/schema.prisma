@@ -8,11 +8,12 @@ datasource db {
 }
 
 model url_shortener {
-  id           Int       @id @default(autoincrement())
-  original_url String
-  short_code   String    @unique @db.VarChar(20)
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
-  updated_at   DateTime? @default(now()) @db.Timestamp(6)
-  visit_count  Int?      @default(0)
-  deleted_at   DateTime? @db.Timestamptz(6)
+  id               Int       @id @default(autoincrement())
+  original_url     String
+  short_code       String    @unique @db.VarChar(20)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+  visit_count      Int?      @default(0)
+  deleted_at       DateTime? @db.Timestamptz(6)
+  last_accessed_at DateTime? @default(now()) @db.Timestamptz(6)
 }

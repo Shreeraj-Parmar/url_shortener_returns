@@ -69,6 +69,7 @@ export const redirectUrl = async (req, res) => {
                 id: true,
                 visit_count: true,
                 original_url: true,
+                last_accessed_at: true,
             },
         })
 
@@ -87,6 +88,7 @@ export const redirectUrl = async (req, res) => {
                 visit_count: {
                     increment: 1,
                 },
+                last_accessed_at: new Date(),
             },
         })
 
