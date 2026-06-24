@@ -24,10 +24,10 @@ test("shorten URL and redirect", async () => {
     const shortenResponse = await request(app)
         .post("/shorten")
         .send({
-            url: "https://example798ddddd56985666.com"
+            url: "https://01o4cqwelu.com/path/xu33ya"
         });
 
-    const shortCode = shortenResponse.body.short_code;
+    const shortCode1 = shortenResponse.body.short_code;
 
     expect(shortenResponse.status).toBe(200);
 
@@ -36,9 +36,9 @@ test("shorten URL and redirect", async () => {
     const shortenResponse2 = await request(app)
         .post("/shorten")
         .send({
-            url: "https://example798ddddd56985666.com"
+            url: "https://01o4cqwelu.com/path/xu33ya"
         });
 
     expect(shortenResponse2.status).toBe(200);
-    expect(shortenResponse2.body.short_code).toBe(shortCode);
+    expect(shortenResponse2.body.short_code).not.toBe(shortCode1);
 });
