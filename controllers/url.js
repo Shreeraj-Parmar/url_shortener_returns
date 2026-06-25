@@ -10,12 +10,36 @@ const generateShortUrl = () => {
 }
 
 export const shortenUrl = async (req, res) => {
-    const { url, expireDate } = req.body
+    const { url, expireDate, code } = req.body
 
     const apiKey = req.headers['x-api-key']
 
     if (!url || !apiKey) {
         return res.status(400).json({ error: 'URL and API key are required' })
+    }
+
+    // if code is emtry string then return error
+    if (code === '') {
+        return res.status(400).json({ error: 'You cannot use empty string as a short code, please try another one' })
+    }
+
+    if (code) {
+        // must contain only alphanumeric characters and hyphens
+        const codeRegex = /^[a-zA-Z0-9-]+$/
+        if (!codeRegex.test(code)) {
+            return res.status(400).json({ error: 'Code must contain only alphanumeric characters and hyphens' })
+        }
+
+        // must not exist in db
+        const existingCode = await prisma.url_shortener.findUnique({
+            where: {
+                short_code: code,
+            },
+        })
+
+        if (existingCode) {
+            return res.status(400).json({ error: 'You cannot use this short code, please try another one' })
+        }
     }
 
     let expire_at = null
@@ -55,7 +79,13 @@ export const shortenUrl = async (req, res) => {
 
     const userId = user.id
 
-    const shortUrl = generateShortUrl()
+    // Generate short url if code is not provided
+    let shortUrl = null
+    if (code) {
+        shortUrl = code
+    } else {
+        shortUrl = generateShortUrl()
+    }
 
     try {
         const prisma_res = await prisma.url_shortener.create({

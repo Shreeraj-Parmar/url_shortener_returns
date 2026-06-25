@@ -191,8 +191,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Method:** `POST`
 - **Path:** `/shorten`
 - **Headers:** `x-api-key` (Required)
-- **Body:** JSON object `{"url": "https://example.com", "expire_at": "2026-12-01T00:00:00Z"}` (`expire_at` is optional)
-- **Description:** Creates a short URL from an original URL. You can optionally provide an `expire_at` future date to automatically expire the link.
+- **Body:** JSON object `{"url": "https://example.com", "expire_at": "2026-12-01T00:00:00Z", "code": "my-custom-code"}` (`expire_at` and `code` are optional)
+- **Description:** Creates a short URL from an original URL. You can optionally provide an `expire_at` future date to automatically expire the link, and a custom `code` (alphanumeric and hyphens only) for the short URL.
 
 ### 4. Redirect URL
 - **Method:** `GET`

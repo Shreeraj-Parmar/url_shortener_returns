@@ -124,3 +124,93 @@ test('Api Key is empty string', async () => {
     expect(shortenResponse.status).toBe(400)
     expect(shortenResponse.body.error).toBe('URL and API key are required')
 })
+
+test('With custom short code', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic-link2'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    const shortCode1 = shortenResponse.body.short_code
+
+    expect(shortenResponse.status).toBe(200)
+    expect(shortCode1).toBe(code)
+})
+
+test('With Null short code', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = null
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    expect(shortenResponse.status).toBe(200)
+})
+
+test('With custom short code already exists', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic-link' // that is already exists
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('You cannot use this short code, please try another one')
+})
+
+test('With custom short code is not alphanumeric', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic!link!@' // that is not alphanumeric
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('Code must contain only alphanumeric characters and hyphens')
+})
+
+test('With custom short code is empty string', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = '' // that is not alphanumeric
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('You cannot use empty string as a short code, please try another one')
+})
+
+test('With custom short code is contain hyphen', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic-link-02' // that is already exists
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+    })
+
+    expect(shortenResponse.status).toBe(200)
+})
