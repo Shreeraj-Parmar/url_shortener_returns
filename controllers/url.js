@@ -10,12 +10,28 @@ const generateShortUrl = () => {
 }
 
 export const shortenUrl = async (req, res) => {
-    const { url } = req.body
+    const { url, expireDate } = req.body
 
     const apiKey = req.headers['x-api-key']
 
     if (!url || !apiKey) {
         return res.status(400).json({ error: 'URL and API key are required' })
+    }
+
+    let expire_at = null
+
+    if (expireDate) {
+        const date_res = new Date(expireDate)
+        if (isNaN(date_res.getTime())) {
+            return res.status(400).json({ error: 'Invalid date' })
+        }
+
+        // If past date then return error
+        if (date_res < new Date()) {
+            return res.status(400).json({ error: 'Please provide future date' })
+        }
+
+        expire_at = date_res
     }
 
     // Is valid url
@@ -47,6 +63,7 @@ export const shortenUrl = async (req, res) => {
                 original_url: url,
                 short_code: shortUrl,
                 user_id: userId,
+                expire_at: expire_at,
             },
         })
 
@@ -76,11 +93,17 @@ export const redirectUrl = async (req, res) => {
                 visit_count: true,
                 original_url: true,
                 last_accessed_at: true,
+                expire_at: true,
             },
         })
 
         if (!prisma_res) {
             return res.status(404).json({ error: 'URL not found' })
+        }
+
+        // If expire_at is set and it is less than current date time
+        if (prisma_res.expire_at && prisma_res.expire_at < new Date()) {
+            return res.status(404).json({ error: 'URL has expired' })
         }
 
         console.log('----------------------------------------->', prisma_res)

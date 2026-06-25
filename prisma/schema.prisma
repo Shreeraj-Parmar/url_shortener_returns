@@ -16,15 +16,16 @@ model url_shortener {
   visit_count      Int?      @default(0)
   deleted_at       DateTime? @db.Timestamptz(6)
   last_accessed_at DateTime? @default(now()) @db.Timestamptz(6)
+  expire_at        DateTime? @db.Timestamptz(6)
   user_id          Int?
   user             users?    @relation(fields: [user_id], references: [id])
 }
 
 model users {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  name       String? 
-  api_key    String   @unique
-  created_at DateTime @default(now())
+  id         Int             @id @default(autoincrement())
+  email      String          @unique
+  name       String?
+  api_key    String          @unique
+  created_at DateTime        @default(now())
   urls       url_shortener[]
 }

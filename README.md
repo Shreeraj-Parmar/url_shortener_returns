@@ -37,7 +37,8 @@ Make sure you have created the following PostgreSQL tables:
 6. `visit_count`
 7. `deleted_at`
 8. `last_accessed_at`
-9. `user_id` (Foreign Key referencing `users(id)`)
+9. `expire_at`
+10. `user_id` (Foreign Key referencing `users(id)`)
 
 **Important:** The code uses the table names `url_shortener` and `users`. Please use these exact table names; otherwise, the application will not work correctly.
 
@@ -190,7 +191,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Method:** `POST`
 - **Path:** `/shorten`
 - **Headers:** `x-api-key` (Required)
-- **Description:** Creates a short URL from an original URL.
+- **Body:** JSON object `{"url": "https://example.com", "expire_at": "2026-12-01T00:00:00Z"}` (`expire_at` is optional)
+- **Description:** Creates a short URL from an original URL. You can optionally provide an `expire_at` future date to automatically expire the link.
 
 ### 4. Redirect URL
 - **Method:** `GET`
