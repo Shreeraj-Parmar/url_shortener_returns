@@ -50,3 +50,19 @@ test('Missing params', async () => {
     expect(redirectResponse.status).toBe(400)
     expect(redirectResponse.body.error).toBe('Code is required')
 })
+
+
+test('Invalid Password', async () => {
+    const redirectResponse = await request(app).get(`/redirect?code=vir1TV&password=12345ss6789`)
+
+    expect(redirectResponse.status).toBe(401)
+    expect(redirectResponse.body.error).toBe('Invalid password')
+})
+
+
+test('Valid Password', async () => {
+    const redirectResponse = await request(app).get(`/redirect?code=vir1TV&password=123456789`)
+
+    expect(redirectResponse.status).toBe(302)
+    expect(redirectResponse.header.location).toBe('https://01o4cqwelu.com/path/xu33ya')
+})

@@ -98,9 +98,42 @@ test('No pass Short code', async () => {
 test('GOOD', async () => {
     // POST 
     const apiKey = 'sk_test_3333333333333333'
-    const expireDate = '2022-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
     const shortenResponse = await request(app).patch('/shorten/vir1TV').set('x-api-key', apiKey).send({
         expireDate: expireDate,
+    })
+
+    expect(shortenResponse.status).toBe(204);
+})
+
+
+
+// Test 8 : Empty Password
+
+
+test('Empty Password', async () => {
+    // POST 
+    const apiKey = 'sk_test_3333333333333333'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).patch('/shorten/vir1TV').set('x-api-key', apiKey).send({
+        expireDate: expireDate,
+        password: ""
+    })
+
+    expect(shortenResponse.status).toBe(400);
+    expect(shortenResponse.body.error).toBe('You cannot use empty string as a password, please try another one')
+})
+
+// Test : 9 => Edit Password
+
+
+test('Edit Password', async () => {
+    // POST 
+    const apiKey = 'sk_test_3333333333333333'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).patch('/shorten/vir1TV').set('x-api-key', apiKey).send({
+        expireDate: expireDate,
+        password: "123456789"
     })
 
     expect(shortenResponse.status).toBe(204);

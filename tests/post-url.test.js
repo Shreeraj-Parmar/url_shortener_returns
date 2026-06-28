@@ -214,3 +214,36 @@ test('With custom short code is contain hyphen', async () => {
 
     expect(shortenResponse.status).toBe(200)
 })
+
+
+test('With Invalid Password (Empty)', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic-link-099' // that is already exists
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+        password: ""
+    })
+
+    expect(shortenResponse.status).toBe(400)
+    expect(shortenResponse.body.error).toBe('You cannot use empty string as a password, please try another one')
+})
+
+
+test('With Password (Correct)', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const code = 'analytic-link-077' // that is already exists
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten').set('x-api-key', apiKey).send({
+        url: 'https://01o4cqwselu.com/path/xu33ya',
+        expireDate: expireDate,
+        code: code,
+        password: "sdasdasd2399"
+    })
+
+    expect(shortenResponse.status).toBe(200)
+})

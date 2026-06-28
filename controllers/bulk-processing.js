@@ -40,7 +40,7 @@ export const handleBulkProcessing = async (req, res) => {
         const userId = user.id
 
         // Extract all bulk urls object
-        // it looks like [{url:"", expireDate:"", code:""}, {url:"", expireDate:"", code:""}]
+        // it looks like [{url:"", expireDate:"", code:"",password:""}, {url:"", expireDate:"", code:""}]
         const bulkUrls = req.body.bulkUrls
 
 
@@ -60,6 +60,11 @@ export const handleBulkProcessing = async (req, res) => {
             // Validate Inputs (validate url,expireDate,code) here expireDate and code is optioanl
             if (!url.url) {
                 resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'URL is required' })
+                continue;
+            }
+
+            if (url?.password === '') {
+                resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'You cannot use empty string as a password, please try another one' })
                 continue;
             }
 
@@ -134,6 +139,7 @@ export const handleBulkProcessing = async (req, res) => {
                         short_code: shortUrl,
                         user_id: userId,
                         expire_at: expire_at,
+                        password: url?.password ? url.password : null,
                     },
                 })
 

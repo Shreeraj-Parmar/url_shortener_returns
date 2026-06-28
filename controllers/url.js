@@ -2,7 +2,7 @@ import { prisma } from '../prismaClient.js'
 import { generateShortUrl } from '../utils/generateUrl.js'
 
 export const shortenUrl = async (req, res) => {
-    const { url, expireDate, code } = req.body
+    const { url, expireDate, code, password } = req.body
 
     const apiKey = req.headers['x-api-key']
 
@@ -13,6 +13,11 @@ export const shortenUrl = async (req, res) => {
     // if code is emtry string then return error
     if (code === '') {
         return res.status(400).json({ error: 'You cannot use empty string as a short code, please try another one' })
+    }
+
+
+    if (password === '') {
+        return res.status(400).json({ error: 'You cannot use empty string as a password, please try another one' })
     }
 
     if (code) {
@@ -86,10 +91,9 @@ export const shortenUrl = async (req, res) => {
                 short_code: shortUrl,
                 user_id: userId,
                 expire_at: expire_at,
+                password: password ? password : null,
             },
         })
-
-        console.log('----------------------------------------->', prisma_res)
 
         res.json({ short_code: shortUrl })
     } catch (error) {
@@ -99,7 +103,7 @@ export const shortenUrl = async (req, res) => {
 }
 
 export const redirectUrl = async (req, res) => {
-    const { code } = req.query
+    const { code, password } = req.query
 
     if (!code) {
         return res.status(400).json({ error: 'Code is required' })
@@ -116,6 +120,7 @@ export const redirectUrl = async (req, res) => {
                 original_url: true,
                 last_accessed_at: true,
                 expire_at: true,
+                password: true,
             },
         })
 
@@ -126,6 +131,11 @@ export const redirectUrl = async (req, res) => {
         // If expire_at is set and it is less than current date time
         if (prisma_res.expire_at && prisma_res.expire_at < new Date()) {
             return res.status(404).json({ error: 'URL has expired' })
+        }
+
+        // If password is set and it is not equal to the provided password
+        if (prisma_res?.password && prisma_res?.password !== password) {
+            return res.status(401).json({ error: 'Invalid password' })
         }
 
         console.log('----------------------------------------->', prisma_res)
@@ -228,7 +238,7 @@ export const softDeleteUrl = async (req, res) => {
  */
 export const editUrl = async (req, res) => {
 
-    const { expireDate } = req?.body
+    const { expireDate, password } = req?.body
 
     const shortCode = req?.params?.shortCode
 
@@ -244,6 +254,10 @@ export const editUrl = async (req, res) => {
 
     if (!expireDate) {
         return res.status(400).json({ error: 'expireDate is required For Edit' })
+    }
+
+    if (password === '') {
+        return res.status(400).json({ error: 'You cannot use empty string as a password, please try another one' })
     }
 
     // Validate expireDate
@@ -295,6 +309,7 @@ export const editUrl = async (req, res) => {
             },
             data: {
                 expire_at: new Date(expireDate),
+                password: password ? password : null,
             },
         })
 

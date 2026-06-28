@@ -396,3 +396,69 @@ test('handle bulk processing of urls: Invalid URL , Invalid Date , Invalide Code
     expect(shortenResponse.body.resultArr).toEqual(expectedRes);
 
 })
+
+
+// Empty Password Test Caswe 
+
+test('Empty Password Test Caswe', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
+        bulkUrls: [
+            {
+                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                expireDate: expireDate,
+                code: "test-code-30",
+                password: ""
+            }
+        ],
+    })
+
+    expect(shortenResponse.status).toBe(400)
+
+    const expectedRes = [
+        {
+            success: false,
+            originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+            code: 'test-code-30',
+            message: 'You cannot use empty string as a password, please try another one',
+        },
+    ];
+
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
+
+})
+
+
+// Correct Password Test Case 
+test('Correct Password Test Case', async () => {
+    // POST
+    const apiKey = 'sk_test_3333333333333333'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
+        bulkUrls: [
+            {
+                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                expireDate: expireDate,
+                code: "test-code-32430",
+                password: "sdfasdf@###558"
+            }
+        ],
+    })
+
+    expect(shortenResponse.status).toBe(200)
+
+    const expectedRes = [
+        {
+            success: true,
+            originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+            expireDate: new Date(expireDate).toISOString(),
+            code: 'test-code-32430',
+            message: 'URL shortened successfully',
+        },
+    ];
+
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
+
+})
