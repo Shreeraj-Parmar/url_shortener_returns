@@ -324,3 +324,57 @@ export const editUrl = async (req, res) => {
 
 }
 
+
+/**
+ * Get all URLs of user
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+
+export const getAllUrlsOfUser = async (req, res) => {
+    const apiKey = req.headers['x-api-key']
+
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API key is required' })
+    }
+
+    const user = await prisma.users.findUnique({
+        where: {
+            api_key: apiKey,
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid API key' })
+    }
+
+    const userId = user.id
+
+    try {
+        const dbRes = await prisma.url_shortener.findMany({
+            where: {
+                user_id: userId,
+            },
+            select: {
+                id: true,
+                original_url: true,
+                short_code: true,
+                expire_at: true,
+                password: true,
+                visit_count: true,
+                last_accessed_at: true,
+                created_at: true,
+                updated_at: true,
+            },
+        })
+
+        res.status(200).json(dbRes)
+    } catch (error) {
+        console.error('Error getting all URLs of user:', error)
+        res.status(500).json({ error: 'Failed to get all URLs of user' })
+    }
+}

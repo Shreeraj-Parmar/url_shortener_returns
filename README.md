@@ -39,6 +39,7 @@ Make sure you have created the following PostgreSQL tables:
 8. `last_accessed_at`
 9. `expire_at`
 10. `user_id` (Foreign Key referencing `users(id)`)
+11. `password`
 
 **Important:** The code uses the table names `url_shortener` and `users`. Please use these exact table names; otherwise, the application will not work correctly.
 
@@ -191,8 +192,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Method:** `POST`
 - **Path:** `/shorten`
 - **Headers:** `x-api-key` (Required)
-- **Body:** JSON object `{"url": "https://example.com", "expire_at": "2026-12-01T00:00:00Z", "code": "my-custom-code"}` (`expire_at` and `code` are optional)
-- **Description:** Creates a short URL from an original URL. You can optionally provide an `expire_at` future date to automatically expire the link, and a custom `code` (alphanumeric and hyphens only) for the short URL.
+- **Body:** JSON object `{"url": "https://example.com", "expireDate": "2028-12-01", "code": "my-custom-code", "password": "my-password"}` (`expireDate`, `code`, and `password` are optional)
+- **Description:** Creates a short URL from an original URL. You can optionally provide an `expireDate` future date to automatically expire the link, a custom `code` (alphanumeric and hyphens only), and a `password` for the short URL.
 
 ### 4. Bulk Shorten URL
 - **Method:** `POST`
@@ -205,7 +206,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
       {
         "url": "https://example.com/1",
         "expireDate": "2028-12-01",
-        "code": "my-custom-code-1"
+        "code": "my-custom-code-1",
+        "password": "my-password-1"
       },
       {
         "url": "https://example.com/2",
@@ -214,7 +216,7 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
     ]
   }
   ```
-  *(Note: `expireDate` and `code` are optional for each item)*
+  *(Note: `expireDate`, `code`, and `password` are optional for each item)*
 - **Description:** Shortens multiple URLs in a single request. 
 - **Response (200 OK or 400 Bad Request):** Returns the processing status for each URL in `resultArr`:
   ```json
@@ -239,7 +241,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 ### 5. Redirect URL
 - **Method:** `GET`
 - **Path:** `/redirect`
-- **Description:** Redirects to the original URL based on the provided short code (usually as a query parameter or path variable).
+- **Query Params:** `code` (Required), `password` (Optional: required only if the URL is password-protected)
+- **Description:** Redirects to the original URL based on the provided short code.
 
 ### 6. Soft Delete URL
 - **Method:** `DELETE`
@@ -251,4 +254,17 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Method:** `GET`
 - **Path:** `/analytics`
 - **Description:** Retrieves an analytics report for shortened URLs.
+
+### 8. Edit URL
+- **Method:** `PATCH`
+- **Path:** `/shorten/:shortCode`
+- **Headers:** `x-api-key` (Required)
+- **Body:** JSON object `{"expireDate": "2028-12-01", "password": "new-password"}` (`expireDate` is required, `password` is optional)
+- **Description:** Updates the expiration date and optionally updates/adds a password for an existing short URL.
+
+### 9. Get User's URLs
+- **Method:** `GET`
+- **Path:** `/urls`
+- **Headers:** `x-api-key` (Required)
+- **Description:** Retrieves all shortened URLs associated with the user's API key.
 

@@ -1,5 +1,5 @@
 import express from 'express'
-import { shortenUrl, redirectUrl, softDeleteUrl, editUrl } from '../controllers/url.js'
+import { shortenUrl, redirectUrl, softDeleteUrl, editUrl ,getAllUrlsOfUser} from '../controllers/url.js'
 import { getAnalyticsReport } from '../controllers/analytics.js'
 import { handleBulkProcessing } from '../controllers/bulk-processing.js'
 
@@ -33,5 +33,9 @@ router.delete('/shorten/:shortCode', softDeleteUrl)
 
 
 router.get('/analytics', getAnalyticsReport)
+
+
+router.get('/urls', getAllUrlsOfUser)
+
 
 export default router
