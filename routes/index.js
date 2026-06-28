@@ -1,6 +1,7 @@
 import express from 'express'
 import { shortenUrl, redirectUrl, softDeleteUrl } from '../controllers/url.js'
 import { getAnalyticsReport } from '../controllers/analytics.js'
+import { handleBulkProcessing } from '../controllers/bulk-processing.js'
 
 const router = express.Router()
 
@@ -15,6 +16,9 @@ router.get('/hello', (req, res) => {
 })
 
 router.post('/shorten', shortenUrl)
+
+// Bulk processing
+router.post('/shorten/bulk', handleBulkProcessing)
 
 router.get('/redirect', redirectUrl)
 
