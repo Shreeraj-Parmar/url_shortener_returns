@@ -194,18 +194,60 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Body:** JSON object `{"url": "https://example.com", "expire_at": "2026-12-01T00:00:00Z", "code": "my-custom-code"}` (`expire_at` and `code` are optional)
 - **Description:** Creates a short URL from an original URL. You can optionally provide an `expire_at` future date to automatically expire the link, and a custom `code` (alphanumeric and hyphens only) for the short URL.
 
-### 4. Redirect URL
+### 4. Bulk Shorten URL
+- **Method:** `POST`
+- **Path:** `/shorten/bulk`
+- **Headers:** `x-api-key` (Required)
+- **Body:** JSON object:
+  ```json
+  {
+    "bulkUrls": [
+      {
+        "url": "https://example.com/1",
+        "expireDate": "2028-12-01",
+        "code": "my-custom-code-1"
+      },
+      {
+        "url": "https://example.com/2",
+        "expireDate": "2028-12-01"
+      }
+    ]
+  }
+  ```
+  *(Note: `expireDate` and `code` are optional for each item)*
+- **Description:** Shortens multiple URLs in a single request. 
+- **Response (200 OK or 400 Bad Request):** Returns the processing status for each URL in `resultArr`:
+  ```json
+  {
+    "resultArr": [
+      {
+        "success": true,
+        "originalUrl": "https://example.com/1",
+        "code": "my-custom-code-1",
+        "expireDate": "2028-12-01T00:00:00.000Z",
+        "message": "URL shortened successfully"
+      },
+      {
+        "success": false,
+        "originalUrl": "https://example.com/2",
+        "message": "Code must contain only alphanumeric characters and hyphens"
+      }
+    ]
+  }
+  ```
+
+### 5. Redirect URL
 - **Method:** `GET`
 - **Path:** `/redirect`
 - **Description:** Redirects to the original URL based on the provided short code (usually as a query parameter or path variable).
 
-### 5. Soft Delete URL
+### 6. Soft Delete URL
 - **Method:** `DELETE`
 - **Path:** `/shorten` or `/shorten/:shortCode`
 - **Headers:** `x-api-key` (Required)
 - **Description:** Performs a soft delete on a shortened URL record.
 
-### 6. Analytics
+### 7. Analytics
 - **Method:** `GET`
 - **Path:** `/analytics`
 - **Description:** Retrieves an analytics report for shortened URLs.
