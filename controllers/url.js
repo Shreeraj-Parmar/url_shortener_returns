@@ -217,3 +217,95 @@ export const softDeleteUrl = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete URL' })
     }
 }
+
+
+
+/**
+ * Edit URL
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 204 on success
+ */
+export const editUrl = async (req, res) => {
+
+    const { expireDate } = req?.body
+
+    const shortCode = req?.params?.shortCode
+
+    const apiKey = req?.headers['x-api-key']
+
+    if (!shortCode) {
+        return res.status(400).json({ error: 'shortCode is required' })
+    }
+
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API key is required' })
+    }
+
+    if (!expireDate) {
+        return res.status(400).json({ error: 'expireDate is required For Edit' })
+    }
+
+    // Validate expireDate
+    if (expireDate) {
+        const parsedDate = new Date(expireDate)
+        if (isNaN(parsedDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid expireDate' })
+        }
+    }
+
+    const user = await prisma.users.findUnique({
+        where: {
+            api_key: apiKey,
+        },
+        select: {
+            id: true,
+        },
+    })
+
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid API key' })
+    }
+
+    const userId = user.id
+
+    // Check id is available
+
+    try {
+        const dbRes = await prisma.url_shortener.findFirst({
+            where: {
+                short_code: shortCode,
+                deleted_at: null,
+                user_id: userId,
+            },
+            select: {
+                id: true,
+            },
+        })
+
+        if (!dbRes) {
+            return res.status(404).json({ error: 'URL not found' })
+        }
+
+
+        // Update db
+        const update_db = await prisma.url_shortener.update({
+            where: {
+                id: dbRes.id,
+            },
+            data: {
+                expire_at: new Date(expireDate),
+            },
+        })
+
+        // Send response
+        res.status(204).send()
+    } catch (error) {
+        console.error('Error editing URL:', error)
+        res.status(500).json({ error: 'Failed to edit URL' })
+    }
+
+
+
+}
+

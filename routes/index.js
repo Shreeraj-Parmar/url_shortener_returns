@@ -1,5 +1,5 @@
 import express from 'express'
-import { shortenUrl, redirectUrl, softDeleteUrl } from '../controllers/url.js'
+import { shortenUrl, redirectUrl, softDeleteUrl, editUrl } from '../controllers/url.js'
 import { getAnalyticsReport } from '../controllers/analytics.js'
 import { handleBulkProcessing } from '../controllers/bulk-processing.js'
 
@@ -19,6 +19,10 @@ router.post('/shorten', shortenUrl)
 
 // Bulk processing
 router.post('/shorten/bulk', handleBulkProcessing)
+
+// Edit 
+router.patch('/shorten', editUrl)
+router.patch('/shorten/:shortCode', editUrl)
 
 router.get('/redirect', redirectUrl)
 
