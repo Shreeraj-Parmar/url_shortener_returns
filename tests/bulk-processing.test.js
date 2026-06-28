@@ -16,6 +16,34 @@ afterAll(async () => {
 })
 
 
+// Test:0 => If User has Tier is Hobby
+test('handle bulk processing of urls: If User has Tier is Hobby', async () => {
+    // POST 
+    const apiKey = 'sk_test_1111111111111111'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
+        bulkUrls: [
+            {
+                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                expireDate: expireDate,
+                code: "test-code-30"
+            },
+            {
+                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                expireDate: expireDate,
+                code: "test-code-40"
+            },
+        ],
+    })
+
+    expect(shortenResponse.status).toBe(403)
+    expect(shortenResponse.body.error).toBe('Only enterprise tier users are allowed to use this API')
+
+})
+
+
+
+
 // Test:1 => All is good
 
 test('handle bulk processing of urls: All is good', async () => {

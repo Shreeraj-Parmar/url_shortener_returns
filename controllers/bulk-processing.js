@@ -24,11 +24,17 @@ export const handleBulkProcessing = async (req, res) => {
             },
             select: {
                 id: true,
+                tier: true
             },
         })
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid API key' })
+        }
+
+        // Check only enterprise tier user are allow for this API
+        if (user.tier !== "enterprise") {
+            return res.status(403).json({ error: 'Only enterprise tier users are allowed to use this API' })
         }
 
         const userId = user.id
