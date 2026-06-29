@@ -268,3 +268,8 @@ This file (`test.prisma.js`) fetches the first 10 records from the `url_shortene
 - **Headers:** `x-api-key` (Required)
 - **Description:** Retrieves all shortened URLs associated with the user's API key.
 
+### 10. Health Check
+- **Method:** `GET`
+- **Path:** `/health`
+- **Description:** Checks if the server is up and running and verifies database connectivity.
+- **Response:** JSON object `{"status": "success", "message": "Server is up and database is connected"}` if healthy, or a 500 error if the database connection fails.
