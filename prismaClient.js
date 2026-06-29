@@ -14,9 +14,16 @@ const poolConfig = process.env.DATABASE_URL
         port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
     };
 
-const pool = new pg.Pool(poolConfig)
+export const pool = new pg.Pool(poolConfig)
 const adapter = new PrismaPg(pool)
 
 export const prisma = new PrismaClient({ adapter })
-export const prismaClient = prisma
 
+// Override $disconnect to also close the pool, so tests exit cleanly
+const originalDisconnect = prisma.$disconnect.bind(prisma);
+prisma.$disconnect = async () => {
+    await originalDisconnect();
+    await pool.end();
+};
+
+export const prismaClient = prisma
