@@ -1,21 +1,27 @@
-import express from "express";
-import dotenv from "dotenv";
-import router from "./routes/index.js";
+import express from 'express'
+import dotenv from 'dotenv'
+import router from './routes/index.js'
+import { Logger } from './middlewares/log.js'
 
-dotenv.config();
+dotenv.config()
 
-const app = express();
+const app = express()
 
-export default app;
+export default app
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080
 
-app.use(express.json());
+app.use(express.json())
 
-app.use(router);
+// Common Middleware
+app.use((req, res, next) => {
+    Logger(req, res, next, {}, 'common')
+})
 
-if (process.env.NODE_ENV !== "test") {
+app.use(router)
+
+if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
-        console.log(`Url Shortener Server is running on port ${PORT}`);
-    });
+        console.log(`Url Shortener Server is running on port ${PORT}`)
+    })
 }
