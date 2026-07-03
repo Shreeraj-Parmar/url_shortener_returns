@@ -68,7 +68,7 @@ test('Api Key is missing', async () => {
     })
 
     expect(shortenResponse.status).toBe(400)
-    expect(shortenResponse.body.error).toBe('URL and API key are required')
+    expect(shortenResponse.body.error).toBe('API key is required')
 })
 
 test('Api is invalid', async () => {
@@ -112,7 +112,7 @@ test('Api Key is empty string', async () => {
     })
 
     expect(shortenResponse.status).toBe(400)
-    expect(shortenResponse.body.error).toBe('URL and API key are required')
+    expect(shortenResponse.body.error).toBe('API key is required')
 })
 
 test('With custom short code', async () => {
