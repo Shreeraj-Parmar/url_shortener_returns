@@ -18,6 +18,18 @@ app.use((req, res, next) => {
     Logger(req, res, next, {}, 'common')
 })
 
+// Time taken middleware
+app.use((req, res, next) => {
+    const start = Date.now()
+    const originalSend = res.send
+    res.send = function (body) {
+        const elapsed = Date.now() - start
+        res.setHeader('X-Response-Time', `${elapsed}ms`)
+        return originalSend.call(this, body)
+    }
+    next()
+})
+
 app.use(router)
 
 if (process.env.NODE_ENV !== 'test') {
