@@ -11,26 +11,7 @@ import { generateShortUrl } from '../utils/generateUrl.js'
 export const handleBulkProcessing = async (req, res) => {
     try {
 
-        // Auth
-        const apiKey = req.headers['x-api-key']
-
-        if (!apiKey) {
-            return res.status(401).json({ error: 'API key is required' })
-        }
-
-        const user = await prisma.users.findUnique({
-            where: {
-                api_key: apiKey,
-            },
-            select: {
-                id: true,
-                tier: true
-            },
-        })
-
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid API key' })
-        }
+        const user = req.user
 
         // Check only enterprise tier user are allow for this API
         if (user.tier !== "enterprise") {

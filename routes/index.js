@@ -3,37 +3,37 @@ import { shortenUrl, redirectUrl, softDeleteUrl, editUrl, getAllUrlsOfUser } fro
 import { getAnalyticsReport } from '../controllers/analytics.js'
 import { handleBulkProcessing } from '../controllers/bulk-processing.js'
 import { checkHealth } from '../controllers/health.js'
+import { authMiddleware } from '../middlewares/authentication.js'
 
 const router = express.Router()
 
+// Health Checking
 router.get('/', (req, res) => {
     res.send('Url Shortener Server is running')
 })
 
-router.get('/hello', (req, res) => {
-    res.json({
-        message: 'Hello World',
-    })
-})
-
-router.post('/shorten', shortenUrl)
+// POST
+router.post('/shorten', authMiddleware, shortenUrl)
 
 // Bulk processing
-router.post('/shorten/bulk', handleBulkProcessing)
+router.post('/shorten/bulk', authMiddleware, handleBulkProcessing)
 
 // Edit
-router.patch('/shorten', editUrl)
-router.patch('/shorten/:shortCode', editUrl)
+router.patch('/shorten', authMiddleware, editUrl)
+router.patch('/shorten/:shortCode', authMiddleware, editUrl)
 
+// Redirect
 router.get('/redirect', redirectUrl)
 
-router.delete('/shorten', softDeleteUrl)
-router.delete('/shorten/:shortCode', softDeleteUrl)
+// Delete
+router.delete('/shorten', authMiddleware, softDeleteUrl)
+router.delete('/shorten/:shortCode', authMiddleware, softDeleteUrl)
 
 router.get('/health', checkHealth)
 
-router.get('/analytics', getAnalyticsReport)
+router.get('/urls', authMiddleware, getAllUrlsOfUser)
 
-router.get('/urls', getAllUrlsOfUser)
+// Admin Route
+router.get('/analytics', getAnalyticsReport)
 
 export default router

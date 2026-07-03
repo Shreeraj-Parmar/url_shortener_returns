@@ -4,17 +4,16 @@ import { generateShortUrl } from '../utils/generateUrl.js'
 export const shortenUrl = async (req, res) => {
     const { url, expireDate, code, password } = req.body
 
-    const apiKey = req.headers['x-api-key']
-
-    if (!url || !apiKey) {
-        return res.status(400).json({ error: 'URL and API key are required' })
+    if (!url) {
+        return res.status(400).json({ error: 'URL' })
     }
+
+    const userId = req.userId
 
     // if code is emtry string then return error
     if (code === '') {
         return res.status(400).json({ error: 'You cannot use empty string as a short code, please try another one' })
     }
-
 
     if (password === '') {
         return res.status(400).json({ error: 'You cannot use empty string as a password, please try another one' })
@@ -60,21 +59,6 @@ export const shortenUrl = async (req, res) => {
     if (!urlRegex.test(url)) {
         return res.status(400).json({ error: 'Invalid URL' })
     }
-
-    const user = await prisma.users.findUnique({
-        where: {
-            api_key: apiKey,
-        },
-        select: {
-            id: true,
-        },
-    })
-
-    if (!user) {
-        return res.status(401).json({ error: 'Invalid API key' })
-    }
-
-    const userId = user.id
 
     // Generate short url if code is not provided
     let shortUrl = null
@@ -165,30 +149,11 @@ export const softDeleteUrl = async (req, res) => {
 
     const shortCode = req?.params?.shortCode
 
-    const apiKey = req.headers['x-api-key']
-
     if (!shortCode) {
         return res.status(400).json({ error: 'shortCode is required' })
     }
 
-    if (!apiKey) {
-        return res.status(400).json({ error: 'API key is required' })
-    }
-
-    const user = await prisma.users.findUnique({
-        where: {
-            api_key: apiKey,
-        },
-        select: {
-            id: true,
-        },
-    })
-
-    if (!user) {
-        return res.status(401).json({ error: 'Invalid API key' })
-    }
-
-    const userId = user.id
+    const userId = req.userId
 
     // Check id is available
 
@@ -228,29 +193,22 @@ export const softDeleteUrl = async (req, res) => {
     }
 }
 
-
-
 /**
  * Edit URL
- * @param {*} req 
- * @param {*} res 
+ * @param {*} req
+ * @param {*} res
  * @returns 204 on success
  */
 export const editUrl = async (req, res) => {
-
     const { expireDate, password } = req?.body
 
     const shortCode = req?.params?.shortCode
-
-    const apiKey = req?.headers['x-api-key']
 
     if (!shortCode) {
         return res.status(400).json({ error: 'shortCode is required' })
     }
 
-    if (!apiKey) {
-        return res.status(400).json({ error: 'API key is required' })
-    }
+    const userId = req.userId
 
     if (!expireDate) {
         return res.status(400).json({ error: 'expireDate is required For Edit' })
@@ -267,21 +225,6 @@ export const editUrl = async (req, res) => {
             return res.status(400).json({ error: 'Invalid expireDate' })
         }
     }
-
-    const user = await prisma.users.findUnique({
-        where: {
-            api_key: apiKey,
-        },
-        select: {
-            id: true,
-        },
-    })
-
-    if (!user) {
-        return res.status(401).json({ error: 'Invalid API key' })
-    }
-
-    const userId = user.id
 
     // Check id is available
 
@@ -301,7 +244,6 @@ export const editUrl = async (req, res) => {
             return res.status(404).json({ error: 'URL not found' })
         }
 
-
         // Update db
         const update_db = await prisma.url_shortener.update({
             where: {
@@ -319,40 +261,17 @@ export const editUrl = async (req, res) => {
         console.error('Error editing URL:', error)
         res.status(500).json({ error: 'Failed to edit URL' })
     }
-
-
-
 }
-
 
 /**
  * Get all URLs of user
- * @param {*} req 
- * @param {*} res 
- * @returns 
+ * @param {*} req
+ * @param {*} res
+ * @returns
  */
 
 export const getAllUrlsOfUser = async (req, res) => {
-    const apiKey = req.headers['x-api-key']
-
-    if (!apiKey) {
-        return res.status(400).json({ error: 'API key is required' })
-    }
-
-    const user = await prisma.users.findUnique({
-        where: {
-            api_key: apiKey,
-        },
-        select: {
-            id: true,
-        },
-    })
-
-    if (!user) {
-        return res.status(401).json({ error: 'Invalid API key' })
-    }
-
-    const userId = user.id
+    const userId = req.userId
 
     try {
         const dbRes = await prisma.url_shortener.findMany({
