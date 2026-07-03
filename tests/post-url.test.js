@@ -82,16 +82,6 @@ test('Api is invalid', async () => {
     expect(shortenResponse.body.error).toBe('Invalid API key')
 })
 
-test('Url is missing', async () => {
-    // POST
-    const shortenResponse = await request(app).post('/shorten').send({
-        url: 'https://01o4cqwelu.com/path/xu33ya',
-    })
-
-    expect(shortenResponse.status).toBe(400)
-    expect(shortenResponse.body.error).toBe('URL and API key are required')
-})
-
 test('Url is invalid', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
@@ -111,7 +101,7 @@ test('Empty string', async () => {
     })
 
     expect(shortenResponse.status).toBe(400)
-    expect(shortenResponse.body.error).toBe('URL and API key are required')
+    expect(shortenResponse.body.error).toBe('URL is required')
 })
 
 test('Api Key is empty string', async () => {

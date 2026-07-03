@@ -5,7 +5,7 @@ export const shortenUrl = async (req, res) => {
     const { url, expireDate, code, password } = req.body
 
     if (!url) {
-        return res.status(400).json({ error: 'URL' })
+        return res.status(400).json({ error: 'URL is required' })
     }
 
     const userId = req.userId
