@@ -15,10 +15,9 @@ afterAll(async () => {
     await prisma.$disconnect()
 })
 
-
 // Test:1 => Invalid API key
 test('Invalid User API KEY', async () => {
-    // GET 
+    // GET
     const apiKey = 'sk_test_111111ddddddd1111111111'
     const shortenResponse = await request(app).get('/urls').set('x-api-key', apiKey)
 
@@ -26,23 +25,31 @@ test('Invalid User API KEY', async () => {
     expect(shortenResponse.body.error).toBe('Invalid API key')
 }, 10000)
 
-
 // Test:2 => API key is missing
 test('API key is missing', async () => {
-    // GET 
+    // GET
     const shortenResponse = await request(app).get('/urls')
 
     expect(shortenResponse.status).toBe(400)
     expect(shortenResponse.body.error).toBe('API key is required')
 })
 
-
 // Test:3 => Valid API key
 test('Valid API key', async () => {
-    // GET 
+    // GET
     const apiKey = 'sk_test_3333333333333333'
     const shortenResponse = await request(app).get('/urls').set('x-api-key', apiKey)
 
     expect(shortenResponse.status).toBe(200)
     expect(shortenResponse.body).toBeInstanceOf(Array)
+})
+
+// Test:4 => Block API key
+test('Block API key', async () => {
+    // GET
+    const apiKey = 'sk_test_44444444444444'
+    const shortenResponse = await request(app).get('/urls').set('x-api-key', apiKey)
+
+    expect(shortenResponse.status).toBe(403)
+    expect(shortenResponse.body.error).toBe('API key is blocked')
 })

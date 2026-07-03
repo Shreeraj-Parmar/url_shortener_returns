@@ -8,6 +8,18 @@ afterAll(async () => {
     await prisma.$disconnect()
 })
 
+// Block API Key Test Cases
+test('Block API Key', async () => {
+    const shortCode = 'rrrxWx' // that is available in DB // make sure change this otherwise test will fail.
+    const apiKey = 'sk_test_44444444444444' // Blocked API Key
+
+    // Delete url
+    const deleteResponse = await request(app).delete(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(403)
+    expect(deleteResponse.body.error).toBe('API key is blocked')
+})
+
 test('Delete url', async () => {
     const shortCode = 'rrrxWx' // that is available in DB // make sure change this otherwise test will fail.
     const apiKey = 'sk_test_3333333333333333'

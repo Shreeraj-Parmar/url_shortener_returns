@@ -205,7 +205,6 @@ test('With custom short code is contain hyphen', async () => {
     expect(shortenResponse.status).toBe(200)
 })
 
-
 test('With Invalid Password (Empty)', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
@@ -215,13 +214,12 @@ test('With Invalid Password (Empty)', async () => {
         url: 'https://01o4cqwselu.com/path/xu33ya',
         expireDate: expireDate,
         code: code,
-        password: ""
+        password: '',
     })
 
     expect(shortenResponse.status).toBe(400)
     expect(shortenResponse.body.error).toBe('You cannot use empty string as a password, please try another one')
 })
-
 
 test('With Password (Correct)', async () => {
     // POST
@@ -232,8 +230,22 @@ test('With Password (Correct)', async () => {
         url: 'https://01o4cqwselu.com/path/xu33ya',
         expireDate: expireDate,
         code: code,
-        password: "sdasdasd2399"
+        password: 'sdasdasd2399',
     })
 
     expect(shortenResponse.status).toBe(200)
+})
+
+// Block API KEY
+
+// Block API KEY Test Cases
+test('Block API Key', async () => {
+    const shortCode = 'rrrxWx' // that is available in DB // make sure change this otherwise test will fail.
+    const apiKey = 'sk_test_44444444444444' // Blocked API Key
+
+    // Post url
+    const deleteResponse = await request(app).post(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(403)
+    expect(deleteResponse.body.error).toBe('API key is blocked')
 })

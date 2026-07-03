@@ -15,34 +15,59 @@ afterAll(async () => {
     await prisma.$disconnect()
 })
 
+// Test:4 => Block API key
+test('Block API key', async () => {
+    // POST
+    const apiKey = 'sk_test_44444444444444'
+    const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-40',
+                },
+            ],
+        })
+
+    expect(shortenResponse.status).toBe(403)
+    expect(shortenResponse.body.error).toBe('API key is blocked')
+})
 
 // Test:0 => If User has Tier is Hobby
 test('handle bulk processing of urls: If User has Tier is Hobby', async () => {
-    // POST 
+    // POST
     const apiKey = 'sk_test_1111111111111111'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-30"
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-40"
-            },
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-40',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(403)
     expect(shortenResponse.body.error).toBe('Only enterprise tier users are allowed to use this API')
-
 })
-
-
-
 
 // Test:1 => All is good
 
@@ -50,20 +75,23 @@ test('handle bulk processing of urls: All is good', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-30"
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-40"
-            },
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-40',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(200)
 
@@ -82,15 +110,10 @@ test('handle bulk processing of urls: All is good', async () => {
             code: 'test-code-40',
             message: 'URL shortened successfully',
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
-
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
-
-
 
 // Test:2 => when one of the code is already exists and one code is not exists
 
@@ -98,23 +121,25 @@ test('handle bulk processing of urls: when one of the code is already exists and
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-30"
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-45"
-            },
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-45',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(200)
-
 
     const expectedRes = [
         {
@@ -130,12 +155,10 @@ test('handle bulk processing of urls: when one of the code is already exists and
             code: 'test-code-45',
             message: 'URL shortened successfully',
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
-
 
 // -------------  Test:3 => when all the code is exist in DB --------------------- //
 
@@ -143,23 +166,25 @@ test('handle bulk processing of urls: when all the code is exist in DB', async (
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-30"
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-45"
-            },
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-45',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(400)
-
 
     const expectedRes = [
         {
@@ -173,14 +198,11 @@ test('handle bulk processing of urls: when all the code is exist in DB', async (
             originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
             code: 'test-code-45',
             message: 'You cannot use this short code, please try another one',
-
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
-
 
 // -------------  Test:4 => Valid case but without Expiry Date And Code --------------------- /
 
@@ -188,19 +210,21 @@ test('handle bulk processing of urls: Valid case but without Expiry Date And Cod
     // POST
     const apiKey = 'sk_test_3333333333333333'
     // const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-            },
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(200)
-
 
     const expectedRes = [
         {
@@ -216,15 +240,11 @@ test('handle bulk processing of urls: Valid case but without Expiry Date And Cod
             code: expect.any(String),
             expireDate: null,
             message: 'URL shortened successfully',
-
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
-
-
 
 // -------------  Test:4 => Invalid Code --------------------- //
 
@@ -232,17 +252,19 @@ test('handle bulk processing of urls: Invalid Code', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     // const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                code: "test-code-300@#$"
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    code: 'test-code-300@#$',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(400)
-
 
     const expectedRes = [
         {
@@ -250,11 +272,10 @@ test('handle bulk processing of urls: Invalid Code', async () => {
             originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
             code: 'test-code-300@#$',
             message: 'Code must contain only alphanumeric characters and hyphens',
-        }
-    ];
+        },
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
 
 // -------------  Test:5 => Invalid API KEY --------------------- //
@@ -263,20 +284,21 @@ test('handle bulk processing of urls: Invalid API KEY', async () => {
     // POST
     const apiKey = 'sk_test_333333333323232333333'
     // const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                code: "test-code-300@#$"
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    code: 'test-code-300@#$',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(401)
     expect(shortenResponse.body.error).toBe('Invalid API key')
-
 })
-
 
 // -------------  Test:6 => Invalid Date --------------------- //
 
@@ -284,28 +306,29 @@ test('handle bulk processing of urls: Invalid Date', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2022-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(400)
-
 
     const expectedRes = [
         {
             success: false,
             originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
             message: 'Please provide future date',
-        }
-    ];
+        },
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
 
 // -------------  Test:7 => Invalid URL --------------------- //
@@ -314,28 +337,29 @@ test('handle bulk processing of urls: Invalid URL', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https: //01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https: //01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(400)
-
 
     const expectedRes = [
         {
             success: false,
             originalUrl: 'https: //01o4cqwselsdsdu.com/path/xu33ya',
             message: 'Invalid URL',
-        }
-    ];
+        },
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
 
 // -------------  Test:8 => Invalid URL , Invalid Date , Invalide Code , Valid Thing --------------------- //
@@ -343,29 +367,31 @@ test('handle bulk processing of urls: Invalid URL', async () => {
 test('handle bulk processing of urls: Invalid URL , Invalid Date , Invalide Code, Valid Thing', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: "2022-12-01",
-            },
-            {
-                url: 'https://01o4 cqwselsdsdu.com/path/xu33ya',
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                code: "test-code-300@#$"
-            },
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: "2028-12-01",
-                code: "test-code-3232"
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: '2022-12-01',
+                },
+                {
+                    url: 'https://01o4 cqwselsdsdu.com/path/xu33ya',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    code: 'test-code-300@#$',
+                },
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: '2028-12-01',
+                    code: 'test-code-3232',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(200)
-
 
     const expectedRes = [
         {
@@ -382,7 +408,7 @@ test('handle bulk processing of urls: Invalid URL , Invalid Date , Invalide Code
             success: false,
             originalUrl: 'https://01o4cqwselsdsdu.com/path/xu33ya',
             message: 'Code must contain only alphanumeric characters and hyphens',
-            code: "test-code-300@#$"
+            code: 'test-code-300@#$',
         },
         {
             success: true,
@@ -390,30 +416,31 @@ test('handle bulk processing of urls: Invalid URL , Invalid Date , Invalide Code
             expireDate: new Date('2028-12-01').toISOString(),
             code: 'test-code-3232',
             message: 'URL shortened successfully',
-        }
-    ];
+        },
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
 
-
-// Empty Password Test Caswe 
+// Empty Password Test Caswe
 
 test('Empty Password Test Caswe', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-30",
-                password: ""
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-30',
+                    password: '',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(400)
 
@@ -424,28 +451,29 @@ test('Empty Password Test Caswe', async () => {
             code: 'test-code-30',
             message: 'You cannot use empty string as a password, please try another one',
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })
 
-
-// Correct Password Test Case 
+// Correct Password Test Case
 test('Correct Password Test Case', async () => {
     // POST
     const apiKey = 'sk_test_3333333333333333'
     const expireDate = '2028-12-01' // in YYYY-MM-DD formet. make dure it is future date.
-    const shortenResponse = await request(app).post('/shorten/bulk').set('x-api-key', apiKey).send({
-        bulkUrls: [
-            {
-                url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
-                expireDate: expireDate,
-                code: "test-code-32430",
-                password: "sdfasdf@###558"
-            }
-        ],
-    })
+    const shortenResponse = await request(app)
+        .post('/shorten/bulk')
+        .set('x-api-key', apiKey)
+        .send({
+            bulkUrls: [
+                {
+                    url: 'https://01o4cqwselsdsdu.com/path/xu33ya',
+                    expireDate: expireDate,
+                    code: 'test-code-32430',
+                    password: 'sdfasdf@###558',
+                },
+            ],
+        })
 
     expect(shortenResponse.status).toBe(200)
 
@@ -457,8 +485,7 @@ test('Correct Password Test Case', async () => {
             code: 'test-code-32430',
             message: 'URL shortened successfully',
         },
-    ];
+    ]
 
-    expect(shortenResponse.body.resultArr).toEqual(expectedRes);
-
+    expect(shortenResponse.body.resultArr).toEqual(expectedRes)
 })

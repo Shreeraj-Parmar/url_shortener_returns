@@ -16,6 +16,21 @@ afterAll(async () => {
 })
 
 
+// API Key blocked Test Cases
+
+test('API key blocked', async () => {
+    const shortCode = 'rrrxWx' // that is available in DB // make sure change this otherwise test will fail.
+    const apiKey = 'sk_test_44444444444444' // Blocked API Key
+
+    // Edit url
+    const deleteResponse = await request(app).patch(`/shorten/${shortCode}`).set('x-api-key', apiKey)
+
+    expect(deleteResponse.status).toBe(403)
+    expect(deleteResponse.body.error).toBe('API key is blocked')
+})
+
+
+
 // Test:1 => If User has Tier is Hobby
 test('Invalid User API KEY', async () => {
     // POST 

@@ -1,29 +1,21 @@
 import { prisma } from '../prismaClient.js'
 import { generateShortUrl } from '../utils/generateUrl.js'
 
-
 /**
  * Handle bulk processing of URLs
- * @param {*} req 
- * @param {*} res 
+ * @param {*} req
+ * @param {*} res
  * @returns [{success: true/false, originalUrl: "", expireDate: "", code: "", message: ""}]
  */
 export const handleBulkProcessing = async (req, res) => {
     try {
-
         const user = req.user
-
-        // Check only enterprise tier user are allow for this API
-        if (user.tier !== "enterprise") {
-            return res.status(403).json({ error: 'Only enterprise tier users are allowed to use this API' })
-        }
 
         const userId = user.id
 
         // Extract all bulk urls object
         // it looks like [{url:"", expireDate:"", code:"",password:""}, {url:"", expireDate:"", code:""}]
         const bulkUrls = req.body.bulkUrls
-
 
         // Validate bulk urls
         if (!bulkUrls || !Array.isArray(bulkUrls)) {
@@ -32,35 +24,47 @@ export const handleBulkProcessing = async (req, res) => {
 
         // Validate each url
 
-        let resultArr = []; // {success: true/false, originalUrl: "", expireDate: "", code: "", message: "", shortCode: ""}
-
-
+        let resultArr = [] // {success: true/false, originalUrl: "", expireDate: "", code: "", message: "", shortCode: ""}
 
         for (const url of bulkUrls) {
-
             // Validate Inputs (validate url,expireDate,code) here expireDate and code is optioanl
             if (!url.url) {
                 resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'URL is required' })
-                continue;
+                continue
             }
 
             if (url?.password === '') {
-                resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'You cannot use empty string as a password, please try another one' })
-                continue;
+                resultArr.push({
+                    success: false,
+                    originalUrl: url.url,
+                    code: url.code,
+                    message: 'You cannot use empty string as a password, please try another one',
+                })
+                continue
             }
 
             // Code validation if exists
             if (url?.code === '') {
-                resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'You cannot use empty string as a short code, please try another one' })
-                continue;
+                resultArr.push({
+                    success: false,
+                    originalUrl: url.url,
+                    code: url.code,
+                    message: 'You cannot use empty string as a short code, please try another one',
+                })
+                continue
             }
 
             if (url?.code) {
                 // must contain only alphanumeric characters and hyphens
                 const codeRegex = /^[a-zA-Z0-9-]+$/
                 if (!codeRegex.test(url.code)) {
-                    resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'Code must contain only alphanumeric characters and hyphens' })
-                    continue;
+                    resultArr.push({
+                        success: false,
+                        originalUrl: url.url,
+                        code: url.code,
+                        message: 'Code must contain only alphanumeric characters and hyphens',
+                    })
+                    continue
                 }
 
                 // must not exist in db
@@ -72,7 +76,7 @@ export const handleBulkProcessing = async (req, res) => {
 
                 if (existingCode) {
                     resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'You cannot use this short code, please try another one' })
-                    continue;
+                    continue
                 }
             }
 
@@ -82,27 +86,24 @@ export const handleBulkProcessing = async (req, res) => {
                 const date_res = new Date(url.expireDate)
                 if (isNaN(date_res.getTime())) {
                     resultArr.push({ success: false, originalUrl: url.url, code: url?.code, message: 'Invalid date' })
-                    continue;
+                    continue
                 }
 
                 // If past date then return error
                 if (date_res < new Date()) {
                     resultArr.push({ success: false, originalUrl: url.url, code: url?.code, message: 'Please provide future date' })
-                    continue;
+                    continue
                 }
 
                 expire_at = date_res
             }
 
-
             // Is valid url
             const urlRegex = /^(http|https):\/\/[^ "\s]+\.[^ "\s]+$/
             if (!urlRegex.test(url.url)) {
                 resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: 'Invalid URL' })
-                continue;
+                continue
             }
-
-
 
             // Generate short url if code is not provided
             let shortUrl = null
@@ -111,7 +112,6 @@ export const handleBulkProcessing = async (req, res) => {
             } else {
                 shortUrl = generateShortUrl()
             }
-
 
             try {
                 const prisma_res = await prisma.url_shortener.create({
@@ -124,12 +124,17 @@ export const handleBulkProcessing = async (req, res) => {
                     },
                 })
 
-                resultArr.push({ success: true, originalUrl: url.url, code: prisma_res.short_code, expireDate: prisma_res.expire_at, message: 'URL shortened successfully' })
+                resultArr.push({
+                    success: true,
+                    originalUrl: url.url,
+                    code: prisma_res.short_code,
+                    expireDate: prisma_res.expire_at,
+                    message: 'URL shortened successfully',
+                })
             } catch (error) {
                 console.error('Error shortening URL:', error)
                 resultArr.push({ success: false, originalUrl: url.url, code: url.code, message: error?.message || 'Failed to shorten URL' })
             }
-
         }
 
         // If one of url is success then send status 200 else 400
@@ -139,7 +144,6 @@ export const handleBulkProcessing = async (req, res) => {
         } else {
             res.status(400).json({ resultArr })
         }
-
     } catch (error) {
         console.error('Error shortening bulk URLs:', error)
         res.status(500).json({ error: 'Failed to shorten bulk URLs' })
