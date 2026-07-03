@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const blacklistFile = path.join(__dirname, '../config/blacklist.json')
+const blackList = JSON.parse(fs.readFileSync(blacklistFile, 'utf8')) // read at server startup to improve performance.
 
 /**
  * Authorization middleware for API key
@@ -25,8 +26,6 @@ export const isBlockedApiKey = async (req, res, next) => {
         }
 
         // Check API KEY is in Blocked List?
-
-        const blackList = JSON.parse(fs.readFileSync(blacklistFile, 'utf8'))
 
         if (blackList.blockedApiKeys.includes(apiKey)) {
             return res.status(403).json({ error: 'API key is blocked' })
