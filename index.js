@@ -22,6 +22,11 @@ app.use((req, res, next) => {
 
 // Demo route for sentry
 app.get('/debug-sentry', function mainHandler(req, res) {
+    Sentry.captureMessage('Something went wrong : fatal', 'fatal')
+    Sentry.captureMessage('Something went wrong : error', 'error')
+    Sentry.captureMessage('Something went wrong : log', 'log')
+    Sentry.captureMessage('Something went wrong : info', 'info')
+    Sentry.captureMessage('Something went wrong : debug', 'debug')
     throw new Error('My Seccond Error')
 })
 
