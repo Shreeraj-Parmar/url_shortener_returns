@@ -1,8 +1,8 @@
+import './instrument.js'
 import express from 'express'
 import dotenv from 'dotenv'
 import router from './routes/index.js'
 import { Logger } from './middlewares/log.js'
-import './instrument.js'
 import * as Sentry from '@sentry/node'
 
 dotenv.config()
