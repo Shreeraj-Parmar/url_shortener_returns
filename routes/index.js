@@ -6,6 +6,7 @@ import { checkHealth } from '../controllers/health.js'
 import { authMiddleware } from '../middlewares/authentication.js'
 import { isEnterpriseUser } from '../middlewares/subscription.js'
 import { isBlockedApiKey } from '../middlewares/blocked-api-key.js'
+import { withTimeTracking } from '../middlewares/time-tracker.js'
 
 const router = express.Router()
 
@@ -15,27 +16,27 @@ router.get('/', (req, res) => {
 })
 
 // POST
-router.post('/shorten', isBlockedApiKey, authMiddleware, shortenUrl)
+router.post('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, shortenUrl))
 
 // Bulk processing
-router.post('/shorten/bulk', isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing)
+router.post('/shorten/bulk', ...withTimeTracking(isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing))
 
 // Edit
-router.patch('/shorten', isBlockedApiKey, authMiddleware, editUrl)
-router.patch('/shorten/:shortCode', isBlockedApiKey, authMiddleware, editUrl)
+router.patch('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, editUrl))
+router.patch('/shorten/:shortCode', ...withTimeTracking(isBlockedApiKey, authMiddleware, editUrl))
 
 // Redirect
-router.get('/redirect', redirectUrl)
+router.get('/redirect', ...withTimeTracking(redirectUrl))
 
 // Delete
-router.delete('/shorten', isBlockedApiKey, authMiddleware, softDeleteUrl)
-router.delete('/shorten/:shortCode', isBlockedApiKey, authMiddleware, softDeleteUrl)
+router.delete('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, softDeleteUrl))
+router.delete('/shorten/:shortCode', ...withTimeTracking(isBlockedApiKey, authMiddleware, softDeleteUrl))
 
-router.get('/health', checkHealth)
+router.get('/health', ...withTimeTracking(checkHealth))
 
-router.get('/urls', isBlockedApiKey, authMiddleware, getAllUrlsOfUser)
+router.get('/urls', ...withTimeTracking(isBlockedApiKey, authMiddleware, getAllUrlsOfUser))
 
 // Admin Route
-router.get('/analytics', getAnalyticsReport)
+router.get('/analytics', ...withTimeTracking(getAnalyticsReport))
 
 export default router
