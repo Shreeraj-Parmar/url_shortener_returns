@@ -2,6 +2,8 @@ import express from 'express'
 import dotenv from 'dotenv'
 import router from './routes/index.js'
 import { Logger } from './middlewares/log.js'
+import './instrument.js'
+import * as Sentry from '@sentry/node'
 
 dotenv.config()
 
@@ -18,6 +20,11 @@ app.use((req, res, next) => {
     Logger(req, res, next, {}, 'common')
 })
 
+// Demo route for sentry
+app.get('/debug-sentry', function mainHandler(req, res) {
+    throw new Error('My Seccond Error')
+})
+
 // Time taken middleware
 app.use((req, res, next) => {
     const start = Date.now()
@@ -31,6 +38,9 @@ app.use((req, res, next) => {
 })
 
 app.use(router)
+
+// Error handling middleware
+Sentry.setupExpressErrorHandler(app)
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
