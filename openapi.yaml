@@ -1,0 +1,591 @@
+openapi: 3.0.3
+
+info:
+    title: URL Shortener API
+    version: 1.1.0
+    description: |
+        URL shortening service with custom short codes, expiry dates, password protection,
+        bulk creation for enterprise tier, and per-user URL listing.
+
+        ## Authentication
+        Most endpoints require an API key sent in the `x-api-key` header.
+        See the [Migration Guide](MIGRATION_GUIDE.md) for moving from unauthenticated v1.
+
+        ## Response headers
+        Every response carries `X-Response-Time` (e.g. `12ms`).
+    contact:
+        name: Developer Support
+        email: support@your-url-shortener.com
+
+servers:
+    - url: http://localhost:8080
+      description: Local development
+    - url: https://api.your-url-shortener.com
+      description: Production
+
+tags:
+    - name: URLs
+      description: Create, edit, delete and list short URLs
+    - name: Redirect
+      description: Public resolution of short codes
+    - name: Bulk
+      description: Enterprise-only bulk operations
+    - name: System
+      description: Health and analytics
+
+security:
+    - ApiKeyAuth: []
+
+paths:
+    /:
+        get:
+            tags: [System]
+            summary: Server liveness
+            description: Plain-text liveness probe. No database check, no auth.
+            security: []
+            responses:
+                '200':
+                    description: Server is running
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
+                                example: Url Shortener Server is running
+
+    /health:
+        get:
+            tags: [System]
+            summary: Health check (server + database)
+            description: Runs `SELECT 1` against the database. Use this for readiness probes.
+            security: []
+            responses:
+                '200':
+                    description: Server up and database reachable
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: success
+                                    message:
+                                        type: string
+                                        example: Server is up and database is connected
+                '500':
+                    description: Database connection failed
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: error
+                                    message:
+                                        type: string
+                                        example: Database connection failed
+                                    error:
+                                        type: string
+
+    /shorten:
+        post:
+            tags: [URLs]
+            summary: Create a short URL
+            description: |
+                Shortens a URL. If `code` is omitted a random short code is generated.
+
+                Validation rules:
+                - `url` must match `^(http|https)://...` and is required
+                - `code` may only contain letters, digits and hyphens, and must be unused
+                - `expireDate` must be a valid, future date
+                - `code` and `password` may not be empty strings (omit them instead)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ShortenRequest'
+                        examples:
+                            minimal:
+                                summary: Minimal — random short code
+                                value:
+                                    url: https://example.com/some/very/long/path
+                            custom:
+                                summary: Custom code, expiry and password
+                                value:
+                                    url: https://example.com/promo
+                                    code: summer-sale
+                                    expireDate: '2026-12-31T23:59:59.000Z'
+                                    password: hunter2
+            responses:
+                '200':
+                    description: Short URL created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    short_code:
+                                        type: string
+                                        example: summer-sale
+                '400':
+                    description: |
+                        Validation failure. Possible `error` values:
+                        `URL is required`, `Invalid URL`, `Invalid date`,
+                        `Please provide future date`,
+                        `Code must contain only alphanumeric characters and hyphens`,
+                        `You cannot use this short code, please try another one`,
+                        `You cannot use empty string as a short code, please try another one`,
+                        `You cannot use empty string as a password, please try another one`,
+                        `API key is required`
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Blocked'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+        patch:
+            tags: [URLs]
+            summary: Edit a short URL (deprecated form)
+            deprecated: true
+            description: |
+                Legacy route kept for backwards compatibility. It has no `shortCode`
+                path parameter, so it always returns `400 shortCode is required`.
+                Use `PATCH /shorten/{shortCode}` instead.
+            responses:
+                '400':
+                    $ref: '#/components/responses/Error'
+
+        delete:
+            tags: [URLs]
+            summary: Delete a short URL (deprecated form)
+            deprecated: true
+            description: |
+                Legacy route kept for backwards compatibility. It has no `shortCode`
+                path parameter, so it always returns `400 shortCode is required`.
+                Use `DELETE /shorten/{shortCode}` instead.
+            responses:
+                '400':
+                    $ref: '#/components/responses/Error'
+
+    /shorten/{shortCode}:
+        parameters:
+            - $ref: '#/components/parameters/ShortCode'
+        patch:
+            tags: [URLs]
+            summary: Edit a short URL
+            description: |
+                Updates the expiry date and password of a short URL you own.
+
+                Note: `password` is overwritten on every call. Omitting it clears any
+                existing password — send it again to keep the URL protected.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EditRequest'
+                        examples:
+                            extendExpiry:
+                                summary: Extend expiry, keep password
+                                value:
+                                    expireDate: '2027-01-31T00:00:00.000Z'
+                                    password: hunter2
+                            clearPassword:
+                                summary: Extend expiry, remove password
+                                value:
+                                    expireDate: '2027-01-31T00:00:00.000Z'
+            responses:
+                '204':
+                    description: Updated. No response body.
+                '400':
+                    description: |
+                        `shortCode is required`, `expireDate is required For Edit`,
+                        `Invalid expireDate`, `API key is required`, or
+                        `You cannot use empty string as a password, please try another one`
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Blocked'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+        delete:
+            tags: [URLs]
+            summary: Delete a short URL
+            description: |
+                Soft-deletes a short URL you own by stamping `deleted_at`. The row stays
+                in the database and the short code remains reserved.
+            responses:
+                '204':
+                    description: Deleted. No response body.
+                '400':
+                    $ref: '#/components/responses/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Blocked'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /shorten/bulk:
+        post:
+            tags: [Bulk]
+            summary: Create many short URLs at once
+            description: |
+                Enterprise tier only. Each entry is validated and created independently —
+                a failure on one entry does not stop the rest.
+
+                The status code reflects the batch as a whole: `200` if at least one
+                entry succeeded, `400` if every entry failed. Always inspect the
+                per-entry `success` flag rather than relying on the status code alone.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [bulkUrls]
+                            properties:
+                                bulkUrls:
+                                    type: array
+                                    items:
+                                        $ref: '#/components/schemas/ShortenRequest'
+                        example:
+                            bulkUrls:
+                                - url: https://example.com/one
+                                  code: promo-one
+                                - url: https://example.com/two
+                                  expireDate: '2026-12-31T23:59:59.000Z'
+                                - url: https://example.com/three
+                                  password: hunter2
+            responses:
+                '200':
+                    description: At least one URL was created
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BulkResult'
+                            example:
+                                resultArr:
+                                    - success: true
+                                      originalUrl: https://example.com/one
+                                      code: promo-one
+                                      expireDate: null
+                                      message: URL shortened successfully
+                                    - success: false
+                                      originalUrl: not-a-url
+                                      code: null
+                                      message: Invalid URL
+                '400':
+                    description: |
+                        Every entry failed (body is the same `resultArr` shape), or the
+                        request itself was malformed (`Invalid bulk urls`, `API key is required`).
+                    content:
+                        application/json:
+                            schema:
+                                oneOf:
+                                    - $ref: '#/components/schemas/BulkResult'
+                                    - $ref: '#/components/schemas/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    description: |
+                        API key is blocked, or `Only enterprise tier users are allowed to use this API`
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /redirect:
+        get:
+            tags: [Redirect]
+            summary: Resolve a short code
+            description: |
+                Public endpoint — no API key needed. Increments `visit_count`, stamps
+                `last_accessed_at`, then issues a 302 to the original URL.
+
+                Postman follows redirects by default; disable *Automatically follow
+                redirects* in settings to inspect the `Location` header instead.
+            security: []
+            parameters:
+                - name: code
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                  example: summer-sale
+                - name: password
+                  in: query
+                  required: false
+                  description: Required only if the URL was created with a password.
+                  schema:
+                      type: string
+            responses:
+                '302':
+                    description: Redirect to the original URL
+                    headers:
+                        Location:
+                            schema:
+                                type: string
+                                format: uri
+                '400':
+                    description: '`Code is required`'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: '`Invalid password`'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: '`URL not found` or `URL has expired`'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /urls:
+        get:
+            tags: [URLs]
+            summary: List your short URLs
+            description: |
+                Returns every URL belonging to the authenticated API key, including
+                soft-deleted ones. Not paginated.
+            responses:
+                '200':
+                    description: List of URLs
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Url'
+                '400':
+                    $ref: '#/components/responses/Error'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Blocked'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+    /analytics:
+        get:
+            tags: [System]
+            summary: Most recently created URLs
+            description: |
+                Admin report of the newest non-deleted URLs across all users, ordered by
+                creation date descending.
+
+                This endpoint is currently unauthenticated — do not expose it publicly.
+            security: []
+            parameters:
+                - name: limit
+                  in: query
+                  required: false
+                  description: Rows to return. Defaults to 10.
+                  schema:
+                      type: integer
+                      default: 10
+                - name: skip
+                  in: query
+                  required: false
+                  description: Rows to skip. Defaults to 0.
+                  schema:
+                      type: integer
+                      default: 0
+            responses:
+                '200':
+                    description: Report retrieved
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    latest_10_urls:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                original_url:
+                                                    type: string
+                                    message:
+                                        type: string
+                                        example: Analytics report retrieved successfully
+                '400':
+                    description: '`Invalid limit parameter` or `Invalid skip parameter`'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    $ref: '#/components/responses/ServerError'
+
+components:
+    securitySchemes:
+        ApiKeyAuth:
+            type: apiKey
+            in: header
+            name: x-api-key
+            description: |
+                API key issued from the developer dashboard. A missing key returns `400`,
+                an unrecognised key returns `401`, and a blacklisted key returns `403`.
+
+    parameters:
+        ShortCode:
+            name: shortCode
+            in: path
+            required: true
+            description: The short code identifying the URL.
+            schema:
+                type: string
+            example: summer-sale
+
+    schemas:
+        ShortenRequest:
+            type: object
+            required: [url]
+            properties:
+                url:
+                    type: string
+                    format: uri
+                    description: Destination URL. Must start with `http://` or `https://`.
+                    example: https://example.com/some/very/long/path
+                code:
+                    type: string
+                    pattern: '^[a-zA-Z0-9-]+$'
+                    description: Custom short code. Generated randomly when omitted.
+                    example: summer-sale
+                expireDate:
+                    type: string
+                    format: date-time
+                    description: Expiry timestamp. Must be in the future.
+                    example: '2026-12-31T23:59:59.000Z'
+                password:
+                    type: string
+                    description: Password required at redirect time.
+                    example: hunter2
+
+        EditRequest:
+            type: object
+            required: [expireDate]
+            properties:
+                expireDate:
+                    type: string
+                    format: date-time
+                    example: '2027-01-31T00:00:00.000Z'
+                password:
+                    type: string
+                    description: Omit to clear the existing password.
+                    example: hunter2
+
+        Url:
+            type: object
+            properties:
+                id:
+                    type: integer
+                original_url:
+                    type: string
+                short_code:
+                    type: string
+                expire_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                password:
+                    type: string
+                    nullable: true
+                visit_count:
+                    type: integer
+                last_accessed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        BulkResult:
+            type: object
+            properties:
+                resultArr:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            success:
+                                type: boolean
+                            originalUrl:
+                                type: string
+                            code:
+                                type: string
+                                nullable: true
+                            expireDate:
+                                type: string
+                                format: date-time
+                                nullable: true
+                            message:
+                                type: string
+
+        Error:
+            type: object
+            properties:
+                error:
+                    type: string
+
+    responses:
+        Error:
+            description: Validation failure
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        Unauthorized:
+            description: '`Invalid API key`'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        Blocked:
+            description: '`API key is blocked`'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        NotFound:
+            description: '`URL not found`'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+        ServerError:
+            description: Unexpected server error
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
