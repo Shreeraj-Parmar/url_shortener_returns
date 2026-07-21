@@ -70,6 +70,8 @@ npm test
 
 For traffic and load testing, we use **k6**. The load test script simulates multiple virtual users to stress-test the URL shortening endpoint.
 
+> 📖 **Full k6 Guide**: For complete documentation on k6 commands, CLI flags, and easy examples, see **[K6_README.md](./K6_README.md)**.
+
 ### 📂 Load Test Structure
 
 - `shorten-test.js` (Located at the root folder)

@@ -133,7 +133,7 @@ export const redirectUrl = async (req, res) => {
         console.log('----------------------------------------->', prisma_res)
 
         // Increment visit_count field by 1
-        await prisma.url_shortener.update({
+         prisma.url_shortener.update({
             where: {
                 id: prisma_res.id,
             },
