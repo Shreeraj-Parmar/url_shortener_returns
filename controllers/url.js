@@ -1,5 +1,6 @@
 import { prisma } from '../prismaClient.js'
 import { generateShortUrl } from '../utils/generateUrl.js'
+import { getCacheRes, storeCacheRes } from '../utils/temp-catch.js'
 
 export const shortenUrl = async (req, res) => {
     const { url, expireDate, code, password } = req.body
@@ -93,8 +94,12 @@ export const redirectUrl = async (req, res) => {
         return res.status(400).json({ error: 'Code is required' })
     }
 
+    // Fetch from cache Function call and return
+
     try {
-        const prisma_res = await prisma.url_shortener.findUnique({
+        let prisma_res = await getCacheRes(code)
+
+        prisma_res = prisma_res ? prisma_res : await prisma.url_shortener.findUnique({
             where: {
                 short_code: code,
             },
@@ -111,6 +116,9 @@ export const redirectUrl = async (req, res) => {
         if (!prisma_res) {
             return res.status(404).json({ error: 'URL not found' })
         }
+
+        // Store in cache
+        storeCacheRes(code, prisma_res)
 
         // If expire_at is set and it is less than current date time
         if (prisma_res.expire_at && prisma_res.expire_at < new Date()) {

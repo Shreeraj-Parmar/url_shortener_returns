@@ -51,7 +51,6 @@ test('Missing params', async () => {
     expect(redirectResponse.body.error).toBe('Code is required')
 })
 
-
 test('Invalid Password', async () => {
     const redirectResponse = await request(app).get(`/redirect?code=vir1TV&password=12345ss6789`)
 
@@ -59,10 +58,25 @@ test('Invalid Password', async () => {
     expect(redirectResponse.body.error).toBe('Invalid password')
 })
 
-
 test('Valid Password', async () => {
     const redirectResponse = await request(app).get(`/redirect?code=vir1TV&password=123456789`)
 
     expect(redirectResponse.status).toBe(302)
     expect(redirectResponse.header.location).toBe('https://01o4cqwelu.com/path/xu33ya')
+})
+
+test('Redirect Cache: Stores result on 1st call and returns cached result on 2nd call', async () => {
+    const shortCode = 'bQ5Cn2Dk'
+
+    // First request - populates cache
+    const res1 = await request(app).get(`/redirect?code=${shortCode}`)
+    expect(res1.status).toBe(302)
+
+    // Check value is stored in tempCache
+    expect(global.tempCache?.[shortCode]).toBeDefined()
+
+    // Second request - returns from cache
+    const res2 = await request(app).get(`/redirect?code=${shortCode}`)
+    expect(res2.status).toBe(302)
+    expect(res2.header.location).toBe(global.tempCache?.[shortCode]?.original_url)
 })
