@@ -56,7 +56,7 @@ app.get('/demo-private-cache', (req, res) => {
 // Demo 1: no-store (The strict option - never cache anything)
 app.get('/demo-no-store', (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
-    
+
     // We return the current time. 
     // Because of 'no-store', the time will ALWAYS update on every single request, 
     // even if you click the address bar and hit enter! The browser never saves it.
@@ -69,7 +69,7 @@ app.get('/demo-no-store', (req, res) => {
 // Demo 2: no-cache (You can cache it, but you MUST ask the server if it changed)
 app.get('/demo-no-cache', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache')
-    
+
     // Express automatically generates an "ETag" (a unique ID) for this data.
     // The browser saves this data and its ETag.
     // Next time, the browser asks: "Has the data for this ETag changed?"
@@ -79,6 +79,27 @@ app.get('/demo-no-cache', (req, res) => {
         staticData: "I am a static string, I don't change!"
     })
 })
+
+
+
+// Example of Response Header "Vary"
+app.get('/demo-vary', (req, res) => {
+    const lang = req.headers["accept-language"] || "";
+
+    // Allow caching for 1 hour
+    res.setHeader("Cache-Control", "public, max-age=3600");
+
+    // Cache separately for each language
+    res.setHeader("Vary", "Accept-Language");
+
+    if (lang.startsWith("ja")) {
+        res.end("こんにちは");
+    } else {
+        res.end("Hello");
+    }
+})
+
+
 
 // Time taken middleware
 app.use((req, res, next) => {
