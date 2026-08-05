@@ -80,6 +80,17 @@ app.get('/demo-no-cache', (req, res) => {
     })
 })
 
+// Demo 2.5: max-age=0, must-revalidate (The outdated way to force revalidation)
+// This behaves identically to no-cache, but is a relic of HTTP/1.0
+app.get('/demo-must-revalidate', (req, res) => {
+    res.setHeader('Cache-Control', 'max-age=0, must-revalidate')
+    
+    res.json({
+        message: 'This behaves identically to now-cache in modern browsers.',
+        staticData: "I am a static string too!"
+    })
+})
+
 
 
 // Example of Response Header "Vary"
@@ -98,6 +109,65 @@ app.get('/demo-vary', (req, res) => {
         res.end("Hello");
     }
 })
+
+// =========================================================================
+// 1. Last-Modified / If-Modified-Since (The "Time" Tool)
+// =========================================================================
+app.get('/demo-last-modified', (req, res) => {
+    // Imagine this timestamp came from your database's "updated_at" column
+    const lastUpdatedAt = new Date('2026-08-05T10:00:00Z'); 
+    
+    // Check what date the browser is asking about
+    const clientDateString = req.headers['if-modified-since'];
+    
+    if (clientDateString) {
+        const clientDate = new Date(clientDateString);
+        // If the browser's date is equal to or newer than our last update...
+        if (clientDate.getTime() >= lastUpdatedAt.getTime()) {
+            console.log("Validation: Client has the latest version (Last-Modified)");
+            return res.status(304).end(); // 304 Not Modified (Saves bandwidth!)
+        }
+    }
+
+    // If the browser doesn't have it, or has an old one, send the data:
+    console.log("Validation: Sending fresh data (Last-Modified)");
+    res.setHeader('Last-Modified', lastUpdatedAt.toUTCString());
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.json({
+        message: 'Here is the data, backed by a Last-Modified timestamp.',
+        updatedAt: lastUpdatedAt.toUTCString()
+    });
+});
+
+// =========================================================================
+// 2. ETag / If-None-Match (The "Fingerprint" Tool)
+// =========================================================================
+app.get('/demo-etag', (req, res) => {
+    // Turn off Express's automatic ETag generator just for this demo 
+    // so we can see how to do it manually!
+    app.set('etag', false);
+
+    // Imagine this fingerprint is a hash of your data, or a strict version number
+    const currentEtag = 'version-v1'; 
+    
+    // Check what ETag the browser is holding onto
+    const clientEtag = req.headers['if-none-match'];
+
+    // If the browser's ETag matches our current ETag...
+    if (clientEtag === currentEtag) {
+        console.log("Validation: Client has the exact matching ETag!");
+        return res.status(304).end(); // 304 Not Modified
+    }
+
+    // If the browser doesn't have it, or it doesn't match, send new data:
+    console.log("Validation: Sending fresh data with new ETag");
+    res.setHeader('ETag', currentEtag);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json({
+        message: 'Here is the data, backed by a strong ETag.',
+        version: currentEtag
+    });
+});
 
 
 
