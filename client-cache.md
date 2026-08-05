@@ -123,7 +123,23 @@ Combined, this behaves exactly like `no-cache`. It was just used as a workaround
 
 ---
 
-## 8. Practical Express.js Testing Demos
+## 8. The Flaw of `no-store` (The Filing Cabinet Analogy)
+
+Most tutorials say: *"If you don't want a file cached, use `no-store`."* **Mozilla says this is wrong!**
+
+Imagine your browser cache is a physical filing cabinet.
+* **`no-store`** means: *"You can read this paper, but you are not allowed to put it in your filing cabinet."*
+* **The Fatal Flaw:** If you accidentally cached a file on Monday, and on Tuesday the server starts sending `no-store`, your browser will still look in the filing cabinet, find Monday's old file, and use it! `no-store` does NOT tell the browser to delete old files. It also completely breaks the browser's instant "Back" button (bfcache).
+
+### The MDN Recommended "Do Not Cache" Solution
+Instead of `no-store`, use this combination for sensitive data:
+**`Cache-Control: no-cache, private`**
+* **`no-cache`:** "You can put this in your filing cabinet, but you MUST call me to verify it every single time before you look at it." (This guarantees you never see old data).
+* **`private`:** "No middlemen (like CDNs) can cache this, only the user's personal browser."
+
+---
+
+## 9. Practical Express.js Testing Demos
 
 Here are practical examples you can run in your Node.js app to see how the Network tab reacts:
 
@@ -180,11 +196,17 @@ app.get('/demo-must-revalidate', (req, res) => {
     res.setHeader('Cache-Control', 'max-age=0, must-revalidate');
     res.json({ message: 'Behaves identically to no-cache in modern browsers.' });
 });
+
+// Demo 6: The MDN Recommended "Do Not Cache" (Privacy + Freshness)
+app.get('/demo-sensitive-data', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, private');
+    res.json({ message: 'Protected from CDNs, but keeps the Back button fast!' });
+});
 ```
 
 ---
 
-## 9. Testing Gotchas (Why am I getting 200 instead of 304?)
+## 10. Testing Gotchas (Why am I getting 200 instead of 304?)
 
 If you are testing `no-cache` or `ETags` and you always see a `200 OK` from your server instead of a `304 Not Modified`, here is why:
 

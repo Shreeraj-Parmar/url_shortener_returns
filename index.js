@@ -86,8 +86,19 @@ app.get('/demo-must-revalidate', (req, res) => {
     res.setHeader('Cache-Control', 'max-age=0, must-revalidate')
     
     res.json({
-        message: 'This behaves identically to now-cache in modern browsers.',
+        message: 'This behaves identically to no-cache in modern browsers.',
         staticData: "I am a static string too!"
+    })
+})
+
+// Demo 2.6: no-cache, private (The MDN Recommended "Do Not Cache" / Privacy Solution)
+// Use this instead of 'no-store' for sensitive data! It protects privacy but keeps the Back button fast.
+app.get('/demo-sensitive-data', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, private')
+    
+    res.json({
+        message: 'This data is protected from CDNs, but keeps the Back button fast!',
+        bankBalance: "$1,000,000"
     })
 })
 
