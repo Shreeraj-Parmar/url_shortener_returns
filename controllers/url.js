@@ -145,6 +145,7 @@ export const redirectUrl = async (req, res) => {
             },
         })
 
+        res.setHeader('Cache-Control', 'public, max-age=3600');
         res.redirect(prisma_res.original_url)
     } catch (error) {
         console.error('Error redirecting URL:', error)
