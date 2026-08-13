@@ -41,3 +41,23 @@ Valkey is a direct fork of Redis 7.2.4 (the last truly free version). It is gove
 Garnet was built completely from scratch by Microsoft Research using C# / .NET. While Redis is famously single-threaded, Garnet was designed from the ground up to be **multi-threaded**. This allows it to take full advantage of modern servers with dozens of CPU cores, making it insanely fast for heavy workloads. Like Valkey, Microsoft made Garnet understand the exact same network commands as Redis, so it also acts as a drop-in replacement!
 
 While Redis is still king today, the war for the future of caching has just begun. But don't worry: because Valkey and Garnet both speak the "Redis language," learning Redis today means you automatically know how to use all three!
+
+---
+
+## 4 Critical Facts Every Developer Must Know About Redis
+
+### 1. The Single-Threaded Trap (`KEYS *` is evil)
+Like Node.js, Redis (and Valkey) processes commands using a **single-threaded event loop**. This means it only executes one command at a time. While this makes it extremely fast (no thread-locking overhead), it introduces a massive danger: **If you run a slow command, you freeze the entire server.**
+*   **The Golden Rule:** Never run the `KEYS *` command in production! It scans the entire database looking for matching keys. While it is doing this, *every other user on your website* is blocked from reading or writing to the cache! Use `SCAN` instead.
+
+### 2. It's "In-Memory" but it still saves to Disk! (Persistence)
+A common misconception is that because Redis runs in RAM, a power outage means all your data is permanently lost. This is mostly false! Redis has two built-in ways to save your data to a physical hard drive:
+*   **RDB (Redis Database):** It takes a "snapshot" of your memory every few minutes and saves it as a file on your hard drive. 
+*   **AOF (Append-Only File):** Every time you write data, Redis logs that exact command to a text file. If the server crashes, Redis just reads the text file from top to bottom to rebuild the memory exactly how it was!
+
+### 3. What happens when the RAM gets full? (Eviction)
+RAM is very expensive. If your server only has 2GB of RAM, and you try to shove 3GB of data into Redis, what happens? **It doesn't crash!** 
+Redis has intelligent **Eviction Policies**. You can tell Redis: *"When you get full, start deleting the data that hasn't been requested in a long time."* This is called **LRU (Least Recently Used)**. Redis will automatically take out the trash so the cache never overflows.
+
+### 4. It's not just a database, it's a Chat Room (Pub/Sub)
+Redis has a feature called **Publish/Subscribe**. It allows your Node.js server to "broadcast" a message, and other servers can instantly "listen" and react to it. Because it lives in RAM, it is insanely fast. This is the secret weapon developers use to build real-time chat applications or multiplayer web games!
