@@ -61,3 +61,49 @@ Redis has intelligent **Eviction Policies**. You can tell Redis: *"When you get 
 
 ### 4. It's not just a database, it's a Chat Room (Pub/Sub)
 Redis has a feature called **Publish/Subscribe**. It allows your Node.js server to "broadcast" a message, and other servers can instantly "listen" and react to it. Because it lives in RAM, it is insanely fast. This is the secret weapon developers use to build real-time chat applications or multiplayer web games!
+
+---
+
+## Getting Started: Redis in Node.js
+
+Because Redis is a completely separate server, using it in Node.js requires two things:
+1. **Running a Redis Server** (The actual database).
+2. **A Node.js Client** (An NPM package to talk to the database).
+
+### 1. The Core Redis Commands
+Redis stores everything as a **Key-Value** pair. Imagine it like a giant JavaScript object, but you interact with it using specific commands.
+
+Here are the 4 commands you will use 99% of the time:
+* **`SET key value`**: Saves data. *(e.g., `SET url:xyz https://google.com`)*
+* **`GET key`**: Retrieves data. *(e.g., `GET url:xyz` returns `https://google.com`)*
+* **`DEL key`**: Deletes data. *(e.g., `DEL url:xyz`)*
+* **`EXPIRE key seconds`**: Tells Redis to automatically delete the data after X seconds. This is perfect for caching because you don't want old data sitting in RAM forever.
+
+### 2. Implementation in Node.js
+To talk to Redis from Node.js, install the official package:
+`npm install redis`
+
+Because your Node app has to send a message across the network to the Redis server and wait for the reply, **every Redis command is asynchronous (`async/await`)**.
+
+```javascript
+import { createClient } from 'redis';
+
+// 1. Create and connect the client to the Redis server
+const redisClient = createClient(); // By default, it connects to localhost:6379
+
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+
+await redisClient.connect();
+
+// 2. Setting data
+await redisClient.set('my_short_code_xyz', 'https://google.com');
+
+// Pro-tip: Set data AND give it an expiration time (EX = seconds) in one line!
+await redisClient.set('my_short_code_xyz', 'https://google.com', {
+    EX: 3600 // Automatically deletes from cache after 1 hour (3600 seconds)
+});
+
+// 3. Getting data
+const cachedUrl = await redisClient.get('my_short_code_xyz');
+console.log(cachedUrl); // Outputs: "https://google.com" or null if it doesn't exist
+```
