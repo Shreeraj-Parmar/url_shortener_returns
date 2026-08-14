@@ -15,6 +15,16 @@ const poolConfig = process.env.DATABASE_URL
     };
 
 export const pool = new pg.Pool(poolConfig)
+
+// Log when the database connects
+pool.on('connect', () => {
+    console.log('Database connected successfully 🐘');
+});
+
+pool.on('error', (err) => {
+    console.error('Unexpected database error', err);
+});
+
 const adapter = new PrismaPg(pool)
 
 export const prisma = new PrismaClient({ adapter })

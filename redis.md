@@ -107,3 +107,40 @@ await redisClient.set('my_short_code_xyz', 'https://google.com', {
 const cachedUrl = await redisClient.get('my_short_code_xyz');
 console.log(cachedUrl); // Outputs: "https://google.com" or null if it doesn't exist
 ```
+
+### 3. Production Connections (Passwords & Hosts)
+Using `createClient()` with no arguments only connects to an unprotected `localhost` server. When you deploy your app to a real server (like AWS or Render), your Redis database will be hosted remotely and protected by a password. 
+
+There are two main ways to connect to a production server:
+
+#### Technique A: The Connection String (Recommended)
+This puts all the connection details into one single string (a Redis URL). This is the cleanest method because you can store the entire string in your `.env` file!
+
+**Format:** `redis://[username]:[password]@[host]:[port]`
+
+```javascript
+// Using a hardcoded string (Not recommended for security)
+const redisClient = createClient({
+    url: 'redis://default:mySuperSecretPassword123@redis-12345.cloud.redislabs.com:12345'
+});
+
+// Using an Environment Variable (Best Practice)
+const redisClient = createClient({
+    url: process.env.REDIS_URL
+});
+```
+*(Note: If your server uses a secure TLS connection, the URL will start with `rediss://` instead of `redis://`)*
+
+#### Technique B: The Configuration Object
+If your hosting provider gives you the host, port, and password separately, you can pass them as an object. This is useful if you want fine-grained control over connection settings (like retries).
+
+```javascript
+const redisClient = createClient({
+    password: 'mySuperSecretPassword123',
+    socket: {
+        host: 'redis-12345.cloud.redislabs.com',
+        port: 12345,
+        tls: true // Use this if your provider requires a secure TLS connection
+    }
+});
+```

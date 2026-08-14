@@ -118,10 +118,10 @@ export const redirectUrl = async (req, res) => {
         }
 
         // Store in cache
-        storeCacheRes(code, prisma_res)
+        await storeCacheRes(code, prisma_res)
 
         // If expire_at is set and it is less than current date time
-        if (prisma_res.expire_at && prisma_res.expire_at < new Date()) {
+        if (prisma_res.expire_at && new Date(prisma_res.expire_at) < new Date()) {
             return res.status(404).json({ error: 'URL has expired' })
         }
 
@@ -133,7 +133,7 @@ export const redirectUrl = async (req, res) => {
         console.log('----------------------------------------->', prisma_res)
 
         // Increment visit_count field by 1
-         prisma.url_shortener.update({
+        prisma.url_shortener.update({
             where: {
                 id: prisma_res.id,
             },
@@ -147,6 +147,7 @@ export const redirectUrl = async (req, res) => {
 
         res.setHeader('Cache-Control', 'public, max-age=3600');
         res.redirect(prisma_res.original_url)
+        // res.status(200).json({ originalUrl: prisma_res.original_url })
     } catch (error) {
         console.error('Error redirecting URL:', error)
         res.status(500).json({ error: 'Failed to redirect URL' })

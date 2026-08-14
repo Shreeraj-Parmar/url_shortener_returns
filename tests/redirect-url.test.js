@@ -1,12 +1,19 @@
 import request from 'supertest'
 import app from '../index.js'
 import { prismaClient } from '../prismaClient.js'
+import redisClient from '../redis/config.js'
 
 const prisma = prismaClient
 
 afterAll(async () => {
     await prisma.$disconnect()
 })
+
+// Add this temporarily to wipe the broken database before tests run!
+beforeAll(async () => {
+    await redisClient.flushAll();
+});
+
 
 test('Valid Case for redirect URL with expiry Date is Null', async () => {
     const shortCode = 'lwRVZlit'
@@ -66,17 +73,17 @@ test('Valid Password', async () => {
 })
 
 test('Redirect Cache: Stores result on 1st call and returns cached result on 2nd call', async () => {
-    const shortCode = 'bQ5Cn2Dk'
+    const shortCode = 'jn85BvF6'
 
     // First request - populates cache
     const res1 = await request(app).get(`/redirect?code=${shortCode}`)
     expect(res1.status).toBe(302)
 
     // Check value is stored in tempCache
-    expect(global.tempCache?.[shortCode]).toBeDefined()
+    expect(await redisClient.get(shortCode)).toBeDefined()
 
     // Second request - returns from cache
     const res2 = await request(app).get(`/redirect?code=${shortCode}`)
     expect(res2.status).toBe(302)
-    expect(res2.header.location).toBe(global.tempCache?.[shortCode]?.original_url)
+    expect(res2.header.location).toBe(JSON.parse(await redisClient.get(shortCode)).original_url)
 })
