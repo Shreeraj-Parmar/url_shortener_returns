@@ -144,3 +144,28 @@ const redisClient = createClient({
     }
 });
 ```
+
+---
+
+## The Hardest Problem in Computer Science: Cache Invalidation
+
+*"There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors."*
+
+### The Problem: Stale Data
+Imagine you are studying for a test. You read a heavy **textbook** (your Postgres Database). Because the textbook takes a long time to read, you write down the most important notes on a quick **cheat sheet** (your Redis Cache).
+
+Now, imagine the teacher updates the textbook, but you forget to update your cheat sheet. The next time you take a test, you look at your cheat sheet and give the wrong answer! This is called **"Stale Data"**.
+
+When data changes in your database (e.g., a user edits a password or deletes a URL), the cache is still holding the *old* data. If you don't do anything, users will get the old, stale data from Redis.
+
+### The 2 Solutions
+To fix this, you must **invalidate** or update the cache whenever you update the database. There are two primary ways to do this:
+
+#### Way 1: Update Both (The Proactive Way)
+When you edit a row in your database, immediately take the new data and push it into Redis using `redisClient.set()`.
+* **Pros:** The next time someone visits, the cache is already warm and ready!
+* **Cons:** It requires writing slightly more code, and you might update the cache for an item that no one ever visits again (wasting memory).
+
+#### Way 2: Delete it from the Cache (The Lazy/Best Way)
+When you edit or delete data in your database, simply delete the key from Redis using `redisClient.del()`. 
+* **Why this is awesome:** The next time someone requests that data, your app will check Redis and find nothing. Because it finds nothing, it will be forced to ask Postgres for the fresh data, and then it will automatically save that fresh data back into Redis! It fixes itself on the fly.

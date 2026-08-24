@@ -1,6 +1,6 @@
 import { prisma } from '../prismaClient.js'
 import { generateShortUrl } from '../utils/generateUrl.js'
-import { getCacheRes, storeCacheRes } from '../utils/temp-catch.js'
+import { delCacheRes, getCacheRes, storeCacheRes } from '../utils/temp-catch.js'
 
 export const shortenUrl = async (req, res) => {
     const { url, expireDate, code, password } = req.body
@@ -193,6 +193,9 @@ export const softDeleteUrl = async (req, res) => {
             },
         })
 
+        // Remove from cache
+        await delCacheRes(shortCode)
+
         console.log('----------------------------------------->', update_db)
 
         // Send response
@@ -264,6 +267,9 @@ export const editUrl = async (req, res) => {
                 password: password ? password : null,
             },
         })
+
+        // Also update this in redis cache
+        await storeCacheRes(shortCode, update_db)
 
         // Send response
         res.status(204).send()

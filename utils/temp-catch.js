@@ -19,3 +19,8 @@ export const getCacheRes = async (key) => {
 
     return JSON.parse(catch_response);
 }
+
+export const delCacheRes = async (key) => {
+    // Delete from temp cache
+    await redisClient.del(key);
+}
