@@ -99,6 +99,11 @@ export const redirectUrl = async (req, res) => {
     try {
         let prisma_res = await getCacheRes(code)
 
+        // 1. Negative Caching Check: If Redis remembers it doesn't exist, block it immediately!
+        if (prisma_res === 'NOT_FOUND') {
+            return res.status(404).json({ error: 'URL not found' })
+        }
+
         prisma_res = prisma_res ? prisma_res : await prisma.url_shortener.findUnique({
             where: {
                 short_code: code,
@@ -114,6 +119,8 @@ export const redirectUrl = async (req, res) => {
         })
 
         if (!prisma_res) {
+            // 2. Negative Caching: Postgres didn't find it, so tell Redis to remember this!
+            await storeCacheRes(code, 'NOT_FOUND')
             return res.status(404).json({ error: 'URL not found' })
         }
 

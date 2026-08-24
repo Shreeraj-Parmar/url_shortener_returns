@@ -169,3 +169,36 @@ When you edit a row in your database, immediately take the new data and push it 
 #### Way 2: Delete it from the Cache (The Lazy/Best Way)
 When you edit or delete data in your database, simply delete the key from Redis using `redisClient.del()`. 
 * **Why this is awesome:** The next time someone requests that data, your app will check Redis and find nothing. Because it finds nothing, it will be forced to ask Postgres for the fresh data, and then it will automatically save that fresh data back into Redis! It fixes itself on the fly.
+
+---
+
+## Negative Caching & Cache Penetration
+
+### The Danger: Cache Penetration Attacks
+Imagine a hacker (or a malicious bot) wants to crash your Postgres database. 
+They realize that if they request a valid, popular short code (like `bQ5Cn2Dk`), your fast Redis cache handles it, and Postgres is completely safe.
+
+So, instead, the bot writes a script to request 10,000 completely random, fake short codes every second:
+* `GET /redirect?code=fake123`
+* `GET /redirect?code=apple99`
+* `GET /redirect?code=zxcvbnm`
+
+If you **do not** cache the fact that these codes don't exist, here is what happens:
+1. The request hits Redis. Redis says "I don't have `fake123`." (This is a Cache Miss)
+2. The request is sent to Postgres. Postgres searches the entire database and says "I don't have it either."
+3. You return a 404 to the user.
+
+Because the bot is sending 10,000 of these requests per second, **every single request bypasses Redis and hits your Postgres database directly.** Your Postgres database will overload, run out of connections, and crash almost instantly! This vulnerability is called **Cache Penetration**.
+
+### The Solution: Negative Caching
+To protect your database, you must use a technique called **Negative Caching**. 
+
+If Postgres searches the database and finds nothing, you should immediately save that "nothingness" into Redis!
+```javascript
+// Saving a negative result into Redis with a short 5-minute expiration
+await redisClient.set('fake123', 'NOT_FOUND', { EX: 300 });
+```
+
+Now, when the bot requests `fake123` again a millisecond later, Redis will intercept the request. It will see the `NOT_FOUND` flag, remember that Postgres already said it doesn't exist, and return a 404 immediately. 
+
+Postgres never even knows the follow-up requests happened, and your database effortlessly survives the attack!
