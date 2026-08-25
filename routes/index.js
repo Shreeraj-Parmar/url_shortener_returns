@@ -7,6 +7,7 @@ import { authMiddleware } from '../middlewares/authentication.js'
 import { isEnterpriseUser } from '../middlewares/subscription.js'
 import { isBlockedApiKey } from '../middlewares/blocked-api-key.js'
 import { withTimeTracking } from '../middlewares/time-tracker.js'
+import { rateLimiter } from '../middlewares/rate-limiter.js'
 
 const router = express.Router()
 
@@ -16,27 +17,27 @@ router.get('/', (req, res) => {
 })
 
 // POST
-router.post('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, shortenUrl))
+router.post('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, shortenUrl))
 
 // Bulk processing
-router.post('/shorten/bulk', ...withTimeTracking(isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing))
+router.post('/shorten/bulk', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing))
 
 // Edit
-router.patch('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, editUrl))
-router.patch('/shorten/:shortCode', ...withTimeTracking(isBlockedApiKey, authMiddleware, editUrl))
+router.patch('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, editUrl))
+router.patch('/shorten/:shortCode', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, editUrl))
 
 // Redirect
-router.get('/redirect', ...withTimeTracking(redirectUrl))
+router.get('/redirect', ...withTimeTracking(rateLimiter, redirectUrl))
 
 // Delete
-router.delete('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, softDeleteUrl))
-router.delete('/shorten/:shortCode', ...withTimeTracking(isBlockedApiKey, authMiddleware, softDeleteUrl))
+router.delete('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, softDeleteUrl))
+router.delete('/shorten/:shortCode', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, softDeleteUrl))
 
-router.get('/health', ...withTimeTracking(checkHealth))
+router.get('/health', ...withTimeTracking(rateLimiter, checkHealth))
 
-router.get('/urls', ...withTimeTracking(isBlockedApiKey, authMiddleware, getAllUrlsOfUser))
+router.get('/urls', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, getAllUrlsOfUser))
 
 // Admin Route
-router.get('/analytics', ...withTimeTracking(getAnalyticsReport))
+router.get('/analytics', ...withTimeTracking(rateLimiter, getAnalyticsReport))
 
 export default router

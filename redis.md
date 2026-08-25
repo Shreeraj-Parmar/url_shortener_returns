@@ -202,3 +202,57 @@ await redisClient.set('fake123', 'NOT_FOUND', { EX: 300 });
 Now, when the bot requests `fake123` again a millisecond later, Redis will intercept the request. It will see the `NOT_FOUND` flag, remember that Postgres already said it doesn't exist, and return a 404 immediately. 
 
 Postgres never even knows the follow-up requests happened, and your database effortlessly survives the attack!
+
+---
+
+## Rate Limiting using Redis
+
+### What is Rate Limiting?
+Rate limiting controls how many HTTP requests a client can make to your server within a given timeframe (e.g., maximum 100 requests per minute). It protects your server from being overwhelmed by spam, DDoS attacks, or runaway client scripts.
+
+### Why use Redis for Rate Limiting?
+Because Redis operates in-memory with near-instantaneous `INCR` operations and built-in key expirations (`EXPIRE`), it can track and throttle thousands of requests per second without adding database overhead.
+
+### How it Works (Fixed Window Pattern):
+1. **Identify the Client**: Extract the client's IP address from `req.headers['x-forwarded-for']` or `req.ip`.
+2. **Increment Counter**: Run `INCR ratelimit:<IP>`.
+3. **Set Expiration**: If `currentCount === 1` (the first request in the window), set a TTL expiration (e.g., 60 seconds) using `EXPIRE ratelimit:<IP> 60`.
+4. **Throttle**: If `currentCount > MAX_REQUESTS`, reject the request with HTTP status `429 Too Many Requests`.
+
+### Express Middleware Example:
+```javascript
+import redisClient from '../redis/config.js';
+
+const REDIS_KEY_PREFIX = 'ratelimit:';
+const MAX_REQUESTS = 100;
+const WINDOW_SECONDS = 60; // 1 minute window
+
+export const rateLimiter = async (req, res, next) => {
+    try {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+        const redisKey = `${REDIS_KEY_PREFIX}${ip}`;
+
+        // 1. Increment request count for this IP
+        const currentCount = await redisClient.incr(redisKey);
+
+        // 2. Set expiry window on the first request
+        if (currentCount === 1) {
+            await redisClient.expire(redisKey, WINDOW_SECONDS);
+        }
+
+        // 3. Throttle if request count exceeds max allowed limit
+        if (currentCount > MAX_REQUESTS) {
+            return res.status(429).json({
+                error: 'Too Many Requests. Please try again later.',
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error('Rate limiting error:', error);
+        // Fail-open: allow request to proceed if Redis has an issue
+        next();
+    }
+};
+```
+
