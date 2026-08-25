@@ -4,6 +4,7 @@ const MAX_REQUESTS = 100; // 100 requests per minute
 const WINDOW = 60; // 1 minute
 import redisClient from '../redis/config.js';
 
+
 export const rateLimiter = async (req, res, next) => {
     try {
         const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
@@ -39,3 +40,46 @@ export const rateLimiter = async (req, res, next) => {
         next();
     }
 }
+
+export const createRateLimiter = ({ maxRequests, windowSeconds, endpointName }) => {
+    return async (req, res, next) => {
+        try {
+            const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+
+            // Key format includes the endpoint name so counts stay separate
+            const redisKey = `${REDIS_KEY_PREFIX}${endpointName}:${ip}`;
+
+            const currentCount = await redisClient.incr(redisKey);
+
+            if (currentCount === 1) {
+                await redisClient.expire(redisKey, windowSeconds);
+            }
+
+            if (currentCount > maxRequests) {
+                return res.status(429).json({
+                    error: 'Too Many Requests. Please try again later.',
+                });
+            }
+
+            next();
+        } catch (error) {
+            console.error('Rate limiting error:', error);
+            next();
+        }
+    };
+};
+
+
+// Max 10 requests per 1 second for /shorten
+export const shortenRateLimiter = createRateLimiter({
+    maxRequests: 10,
+    windowSeconds: 1,
+    endpointName: 'shorten',
+});
+
+// Max 50 requests per 1 second for /redirect
+export const redirectRateLimiter = createRateLimiter({
+    maxRequests: 50,
+    windowSeconds: 1,
+    endpointName: 'redirect',
+});

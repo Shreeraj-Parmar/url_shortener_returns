@@ -7,7 +7,7 @@ import { authMiddleware } from '../middlewares/authentication.js'
 import { isEnterpriseUser } from '../middlewares/subscription.js'
 import { isBlockedApiKey } from '../middlewares/blocked-api-key.js'
 import { withTimeTracking } from '../middlewares/time-tracker.js'
-import { rateLimiter } from '../middlewares/rate-limiter.js'
+import { rateLimiter, redirectRateLimiter, shortenRateLimiter } from '../middlewares/rate-limiter.js'
 
 const router = express.Router()
 
@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
 })
 
 // POST
-router.post('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, shortenUrl))
+router.post('/shorten', ...withTimeTracking(shortenRateLimiter, isBlockedApiKey, authMiddleware, shortenUrl))
 
 // Bulk processing
 router.post('/shorten/bulk', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing))
@@ -27,7 +27,7 @@ router.patch('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authM
 router.patch('/shorten/:shortCode', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, editUrl))
 
 // Redirect
-router.get('/redirect', ...withTimeTracking(rateLimiter, redirectUrl))
+router.get('/redirect', ...withTimeTracking(redirectRateLimiter, redirectUrl))
 
 // Delete
 router.delete('/shorten', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, softDeleteUrl))
