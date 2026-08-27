@@ -7,7 +7,7 @@ import { authMiddleware } from '../middlewares/authentication.js'
 import { isEnterpriseUser } from '../middlewares/subscription.js'
 import { isBlockedApiKey } from '../middlewares/blocked-api-key.js'
 import { withTimeTracking } from '../middlewares/time-tracker.js'
-import { rateLimiter, redirectRateLimiter, shortenRateLimiter } from '../middlewares/rate-limiter.js'
+import { rateLimiter, redirectRateLimiter, tierRateLimiter } from '../middlewares/rate-limiter.js'
 
 const router = express.Router()
 
@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
 })
 
 // POST
-router.post('/shorten', ...withTimeTracking(shortenRateLimiter, isBlockedApiKey, authMiddleware, shortenUrl))
+router.post('/shorten', ...withTimeTracking(isBlockedApiKey, authMiddleware, tierRateLimiter, shortenUrl))
 
 // Bulk processing
 router.post('/shorten/bulk', ...withTimeTracking(rateLimiter, isBlockedApiKey, authMiddleware, isEnterpriseUser, handleBulkProcessing))

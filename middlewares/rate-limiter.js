@@ -1,8 +1,8 @@
-
 const REDIS_KEY_PREFIX = 'ratelimit:';
 const MAX_REQUESTS = 100; // 100 requests per minute
 const WINDOW = 60; // 1 minute
 import redisClient from '../redis/config.js';
+import { prisma } from '../prismaClient.js';
 
 
 export const rateLimiter = async (req, res, next) => {
@@ -83,3 +83,49 @@ export const redirectRateLimiter = createRateLimiter({
     windowSeconds: 1,
     endpointName: 'redirect',
 });
+
+// Dynamic Rate Limiter based on User Tier
+export const tierRateLimiter = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+        
+        // If not authenticated, fallback to IP
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+        const identifier = userId ? `user:${userId}` : `ip:${ip}`;
+        
+        // 5 requests per 60 seconds for Free tier
+        let maxRequests = 5; 
+        let windowSeconds = 60;
+
+        // If authenticated, check their tier from req.user
+        if (req.user) {
+            const userTier = req.user.tier;
+            
+            // Adjust limits for paying customers
+            if (userTier === 'hobby') {
+                maxRequests = 50; 
+            } else if (userTier === 'enterprise') {
+                maxRequests = 500;
+            }
+        }
+
+        // Redis logic
+        const redisKey = `${REDIS_KEY_PREFIX}tier:${identifier}`;
+        const currentCount = await redisClient.incr(redisKey);
+
+        if (currentCount === 1) {
+            await redisClient.expire(redisKey, windowSeconds);
+        }
+
+        if (currentCount > maxRequests) {
+            return res.status(429).json({
+                error: 'Too Many Requests. Please upgrade your plan for higher limits.',
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error('Tier rate limiting error:', error);
+        next(); // Fail open so users aren't blocked if Redis goes down
+    }
+};

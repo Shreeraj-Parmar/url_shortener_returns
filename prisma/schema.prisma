@@ -29,10 +29,11 @@ model users {
   api_key    String          @unique
   created_at DateTime        @default(now())
   urls       url_shortener[]
-  tier       Tier            @default(hobby)
+  tier       Tier            @default(free)
 }
 
 enum Tier {
+  free
   hobby
   enterprise
 }
