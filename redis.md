@@ -256,3 +256,42 @@ export const rateLimiter = async (req, res, next) => {
 };
 ```
 
+---
+
+## Eviction Policies (What happens when Redis runs out of memory?)
+
+When your Redis server is full, it has to decide which data to delete to make room for new data. This is called an **Eviction Policy**.
+
+### The "T-Shirt Closet" Analogy
+Imagine a closet that can only hold exactly 3 T-shirts.
+You own 4 shirts: a **Google** shirt, an **Apple** shirt, an **Amazon** shirt, and a **Netflix** shirt.
+Because the closet only holds 3 shirts, whenever you buy a new one, you must throw one in the trash. *How do you decide which one to throw away?*
+
+### 1. The LRU Way (Least *Recently* Used)
+**Rule:** "Throw away the shirt I haven't worn in the longest amount of time." (It only cares about the DATE).
+
+* For an entire year, you wear the **Google** shirt every single day. (You've worn it 365 times! It's your favorite!).
+* This weekend, you decide to wear the **Apple** shirt on Friday, the **Amazon** shirt on Saturday, and the **Netflix** shirt on Sunday. Your closet is now full. 
+* On Monday, you buy a new shirt. **LRU looks at the dates.** It sees you haven't worn the Google shirt since Thursday. Because the Google shirt is the "oldest" one you wore, **LRU throws your favorite Google shirt in the trash!**
+
+*The flaw:* Just because you didn't wear it this weekend, LRU deleted your favorite shirt.
+
+### 2. The LFU Way (Least *Frequently* Used)
+**Rule:** "Throw away the shirt I have worn the fewest number of times." (It only cares about the COUNTER).
+
+* It tracks a scoreboard:
+  * Google Shirt = 365 wears
+  * Apple Shirt = 1 wear
+  * Amazon Shirt = 1 wear
+  * Netflix Shirt = 1 wear
+* On Monday, you buy a new shirt. Your closet is full.
+* **LFU looks at the scoreboard.** It sees the Google shirt has 365 wears. It says, *"Wow, you love this shirt, I will never throw this away!"* Instead, it throws away the Apple shirt because it only has a score of 1.
+
+### Which is best for a URL Shortener?
+* **Best Choice: LFU (Least Frequently Used)**
+* The **Google shirt** is a viral YouTube link that has been clicked 1,000,000 times.
+* The **Apple shirt** is a random link someone created to test your app, clicked exactly 1 time today.
+
+If you use **LRU**, and a bot clicks random test links today, Redis will delete your viral YouTube link from the cache just because no one clicked it in the last 24 hours!
+
+If you use **LFU**, Redis tracks that the YouTube link has 1,000,000 clicks. It will protect that link forever, and it will quickly delete all the random 1-click test links instead.
