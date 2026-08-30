@@ -15,9 +15,9 @@ const runEvictionTest = async () => {
         // await client.configSet('maxmemory-policy', 'allkeys-lru');
         
         console.log("\n--- STEP 1: Creating 3 VIP Keys ---");
-        await client.set('VIP_1', 'I am important');
-        await client.set('VIP_2', 'I am important');
-        await client.set('VIP_3', 'I am important');
+        await client.set('VIP_1', 'I am important', { EX: 3600 });
+        await client.set('VIP_2', 'I am important', { EX: 3600 });
+        await client.set('VIP_3', 'I am important', { EX: 3600 });
         
         console.log("VIP Keys created. We will access VIP_1 continuously during the flood so it stays 'Recently Used'.");
         
@@ -34,7 +34,7 @@ const runEvictionTest = async () => {
             }
             
             // Add a junk key
-            await client.set(`junk_${i}`, junkString);
+            await client.set(`junk_${i}`, junkString, { EX: 3600 });
         }
 
         console.log("\n--- STEP 3: Checking who survived! ---");
