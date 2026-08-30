@@ -256,7 +256,22 @@ export const rateLimiter = async (req, res, next) => {
 };
 ```
 
+### [Bonus] Rate-Limit Headers
+When you rate-limit a client, it is a professional best-practice to send standard HTTP headers in your response indicating their limits. This acts as a "scoreboard" so the client application knows exactly how many requests they can make before getting hit with a `429 Too Many Requests` error.
+
+Here is what these headers look like:
+```http
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 100         # Max allowance per window.
+X-RateLimit-Remaining: 5       # Requests left in this window.
+X-RateLimit-Reset: 1678900000  # Unix timestamp for when the window resets.
+```
+
+To add this in Express, you simply modify your middleware to calculate the remaining requests and the reset time, and use `res.setHeader()` to attach them to every response!
+
 ---
+
+
 
 ## Eviction Policies (What happens when Redis runs out of memory?)
 

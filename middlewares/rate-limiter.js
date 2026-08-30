@@ -129,3 +129,46 @@ export const tierRateLimiter = async (req, res, next) => {
         next(); // Fail open so users aren't blocked if Redis goes down
     }
 };
+
+// -------------------------------------------------------------
+// [BONUS] Rate Limiter that INJECTS X-RateLimit Headers
+// -------------------------------------------------------------
+export const createRateLimiterWithHeaders = ({ maxRequests, windowSeconds, endpointName }) => {
+    return async (req, res, next) => {
+        try {
+            const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+            const redisKey = `${REDIS_KEY_PREFIX}headers:${endpointName}:${ip}`;
+
+            const currentCount = await redisClient.incr(redisKey);
+            let ttl = await redisClient.ttl(redisKey);
+
+            if (currentCount === 1) {
+                await redisClient.expire(redisKey, windowSeconds);
+                ttl = windowSeconds;
+            } else if (ttl === -1) {
+                await redisClient.expire(redisKey, windowSeconds);
+                ttl = windowSeconds;
+            }
+
+            // Calculate exact Unix timestamp for reset
+            const resetTimestamp = Math.floor(Date.now() / 1000) + ttl;
+            const remaining = Math.max(0, maxRequests - currentCount);
+
+            // Set the headers on the response!
+            res.setHeader('X-RateLimit-Limit', maxRequests);
+            res.setHeader('X-RateLimit-Remaining', remaining);
+            res.setHeader('X-RateLimit-Reset', resetTimestamp);
+
+            if (currentCount > maxRequests) {
+                return res.status(429).json({
+                    error: 'Bonus Header Error: Too Many Requests.',
+                });
+            }
+
+            next();
+        } catch (error) {
+            console.error('Rate limiting headers error:', error);
+            next();
+        }
+    };
+};

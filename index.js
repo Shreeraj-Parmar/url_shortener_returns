@@ -194,6 +194,21 @@ app.use((req, res, next) => {
     next()
 })
 
+import { createRateLimiterWithHeaders } from './middlewares/rate-limiter.js';
+
+// Demo 3: [BONUS] Rate Limiting Headers
+const demoRateLimiter = createRateLimiterWithHeaders({
+    maxRequests: 5,
+    windowSeconds: 60,
+    endpointName: 'demo-rate-limit'
+});
+
+app.get('/demo-rate-limit', demoRateLimiter, (req, res) => {
+    res.json({
+        message: 'Success! Look at the Response Headers in Postman or Browser DevTools!',
+        tip: 'Check for X-RateLimit-Remaining counting down to 0, then you will get blocked.'
+    });
+});
 app.use(router)
 
 // Error handling middleware
