@@ -225,6 +225,22 @@ app.get('/demo-sliding-window', slidingLimiter, (req, res) => {
     });
 });
 
+import { tokenBucketRateLimiter } from './middlewares/token-bucket.js';
+
+// Demo 5: Token Bucket Rate Limiter
+// Bucket holds 5 Hearts. You earn 0.5 Hearts per second (1 full heart every 2 seconds).
+const tokenLimiter = tokenBucketRateLimiter({
+    maxTokens: 5,
+    refillRatePerSecond: 0.5 
+});
+
+app.get('/demo-token-bucket', tokenLimiter, (req, res) => {
+    res.json({
+        message: 'Success! You spent 1 Heart.',
+        tip: 'Spam refresh 5 times. On the 6th time you will run out of hearts! Wait 2 seconds to earn 1 back.'
+    });
+});
+
 app.use(router)
 
 // Error handling middleware

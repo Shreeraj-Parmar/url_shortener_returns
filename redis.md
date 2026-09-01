@@ -346,6 +346,96 @@ export const slidingWindowRateLimiter = ({ maxRequests, windowSeconds }) => {
 
 ---
 
+### Advanced: The Token Bucket Pattern (The Industry Standard)
+This is the most popular rate-limiting algorithm in the world (used by giants like Amazon AWS and Stripe). It is famous because it is incredibly memory-efficient and allows for "bursts" of traffic.
+
+#### The "Candy Crush Hearts" Analogy
+Think about a mobile game like **Candy Crush**.
+1. You have a maximum of **5 Hearts** at the top of your screen.
+2. Every time you want to play a level (make a request), it costs you **1 Heart**.
+3. If you have **0 Hearts**, the game blocks you and says "Please wait!" You cannot play.
+4. The game slowly gives you **1 free Heart every 30 minutes** (the refill rate) until you are back up to the maximum of 5.
+
+If a user doesn't visit your website for a whole day, their bucket fills up to the maximum. When they finally return, they can click around and make 5 requests incredibly fast (a "burst")! But once they spend those 5 hearts, they are forced to slow down to your refill rate. 
+
+#### Express Middleware Example (Token Bucket):
+```javascript
+import redisClient from '../redis/config.js';
+
+export const tokenBucketRateLimiter = ({ maxTokens, refillRatePerSecond }) => {
+    return async (req, res, next) => {
+        try {
+            const identifier = req.ip || 'unknown';
+            const key = `ratelimit:token:${identifier}`;
+            const now = Date.now();
+
+            // Fetch the user's bucket from Redis (using hGetAll for a Hash)
+            const bucket = await redisClient.hGetAll(key);
+
+            let tokens;
+            let lastRefill;
+
+            if (Object.keys(bucket).length === 0) {
+                // First visit! Give them a full bucket.
+                tokens = maxTokens; 
+                lastRefill = now;
+            } else {
+                // Return visit. Read their saved stats.
+                tokens = parseFloat(bucket.tokens);
+                lastRefill = parseInt(bucket.lastRefill);
+
+                // Calculate how much time passed, and give them their earned free tokens
+                const secondsPassed = (now - lastRefill) / 1000;
+                const earnedTokens = secondsPassed * refillRatePerSecond;
+
+                // Add the earned tokens, but NEVER go over the max limit
+                tokens = Math.min(maxTokens, tokens + earnedTokens);
+                lastRefill = now;
+            }
+
+            // Do they have at least 1 token to spend?
+            if (tokens >= 1) {
+                tokens -= 1; // Spend 1 token
+                
+                // Save the new token count and timestamp back to Redis
+                const multi = redisClient.multi();
+                multi.hSet(key, { 
+                    tokens: tokens.toString(), 
+                    lastRefill: lastRefill.toString() 
+                });
+                multi.expire(key, 120); 
+                await multi.exec();
+                
+                next(); // Allow them in!
+            } else {
+                // Blocked! Out of tokens.
+                await redisClient.hSet(key, { 
+                    tokens: tokens.toString(), 
+                    lastRefill: lastRefill.toString() 
+                });
+                
+                return res.status(429).json({ error: 'Too Many Requests' });
+            }
+        } catch (error) {
+            console.error('Token Bucket Error:', error);
+            next(); // Fail open
+        }
+    };
+};
+```
+
+#### Pros and Cons of Token Bucket
+
+**Pros:**
+* **Allows Bursts:** It allows users to make a quick burst of legitimate requests if they haven't used the API recently, creating a smoother user experience.
+* **Extremely Memory Efficient:** Unlike the Sliding Window which stores every single timestamp, the Token Bucket only stores **two** tiny numbers (the remaining tokens and the last refill time) per user. It uses almost zero RAM.
+
+**Cons:**
+* **Tricky to Tune:** You have to carefully balance two different parameters: the Bucket Capacity (burst size) and the Refill Rate. If the bucket is too large, hackers can still overwhelm your server with a massive burst before running out of tokens.
+* **Race Conditions:** In a true massive-scale production environment, if a user sends 5 requests at the exact same millisecond, the Node.js math above can have a "Race Condition" and accidentally allow all 5 through before it saves the new total to Redis. (To fix this in production, developers write a small "Lua Script" that runs the math directly inside the Redis server).
+
+---
+
 ## Eviction Policies (What happens when Redis runs out of memory?)
 
 When your Redis server is full, it has to decide which data to delete to make room for new data. This is called an **Eviction Policy**.
