@@ -271,7 +271,70 @@ To add this in Express, you simply modify your middleware to calculate the remai
 
 ---
 
+### Advanced: The Sliding Window Pattern
+The fixed window pattern (shown above) has a flaw: if your limit is 100 requests per minute, a user could make 100 requests at 1:00:59, and another 100 requests at 1:01:00. They just made 200 requests in 2 seconds!
 
+To fix this, we use the **Sliding Window** pattern using Redis Sorted Sets (`zset`). 
+
+#### The "Coffee Receipt" Analogy
+Imagine your rule is **"I can only buy 2 coffees every 10 minutes."** 
+To track this, you keep a metal spike on your desk. Every time you buy a coffee, you take the paper receipt, write the exact time on it, and stab it onto the spike. When you want a new coffee:
+
+1. **`zRemRangeByScore` (The Trash Can):** You look at your spike and pull off any receipts older than 10 minutes. You throw them in the trash.
+2. **`zAdd` (The Pen):** You write a brand new receipt for the coffee you want right now with the current time, and you stab it onto the top of the spike.
+3. **`zCard` (The Counting Finger):** You count how many receipts are left on the spike. If there are 3, you broke the rule and cannot drink the coffee!
+
+*Note: When we `zAdd`, we save the exact timestamp as the "score" (so Redis keeps them in order), and a string combining the timestamp + a random number as the "value" (so Redis knows every click is unique).*
+
+#### Express Middleware Example (Sliding Window):
+```javascript
+import redisClient from '../redis/config.js';
+
+export const slidingWindowRateLimiter = ({ maxRequests, windowSeconds }) => {
+    return async (req, res, next) => {
+        try {
+            const identifier = req.ip || 'unknown';
+            const key = `ratelimit:sliding:${identifier}`;
+
+            const now = Date.now();
+            const windowStart = now - (windowSeconds * 1000);
+
+            // Open a pipeline to send all commands at once for maximum speed
+            const multi = redisClient.multi();
+
+            // 1. (The Trash Can) Remove timestamps older than our allowed window
+            multi.zRemRangeByScore(key, 0, windowStart);
+
+            // 2. (The Pen) Add the current timestamp to the stack
+            const uniqueMember = `${now}-${Math.random()}`;
+            multi.zAdd(key, [{ score: now, value: uniqueMember }]);
+
+            // 3. (The Finger) Count how many timestamps are left
+            multi.zCard(key);
+
+            // 4. Set an expiration so the list auto-deletes if they leave
+            multi.expire(key, windowSeconds + 1);
+
+            // Run the pipeline!
+            const results = await multi.exec();
+            
+            // The result of zCard (counting) is the 3rd command (index 2)
+            const requestCount = results[2];
+
+            if (requestCount > maxRequests) {
+                return res.status(429).json({ error: 'Too Many Requests' });
+            }
+
+            next();
+        } catch (error) {
+            console.error('Sliding Window Rate Limiter Error:', error);
+            next();
+        }
+    };
+};
+```
+
+---
 
 ## Eviction Policies (What happens when Redis runs out of memory?)
 

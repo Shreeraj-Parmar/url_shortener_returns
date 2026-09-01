@@ -195,6 +195,7 @@ app.use((req, res, next) => {
 })
 
 import { createRateLimiterWithHeaders } from './middlewares/rate-limiter.js';
+import { slidingWindowRateLimiter } from './middlewares/sliding-window.js';
 
 // Demo 3: [BONUS] Rate Limiting Headers
 const demoRateLimiter = createRateLimiterWithHeaders({
@@ -209,6 +210,21 @@ app.get('/demo-rate-limit', demoRateLimiter, (req, res) => {
         tip: 'Check for X-RateLimit-Remaining counting down to 0, then you will get blocked.'
     });
 });
+
+// Demo 4: Sliding Window Rate Limiter
+// Only allows 2 requests every 10 seconds.
+const slidingLimiter = slidingWindowRateLimiter({
+    maxRequests: 2,
+    windowSeconds: 10
+});
+
+app.get('/demo-sliding-window', slidingLimiter, (req, res) => {
+    res.json({
+        message: 'Success! You passed the sliding window rate limiter.',
+        tip: 'Try refreshing more than 2 times in 10 seconds to see the block.'
+    });
+});
+
 app.use(router)
 
 // Error handling middleware
