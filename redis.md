@@ -334,6 +334,16 @@ export const slidingWindowRateLimiter = ({ maxRequests, windowSeconds }) => {
 };
 ```
 
+#### Pros and Cons of Sliding Window
+
+**Pros:**
+* **Perfectly Accurate:** It completely fixes the "Boundary Flaw" of the Fixed Window. It is impossible to cheat the limit by spamming requests exactly when the minute rolls over.
+* **Smooths Traffic:** It prevents sudden huge bursts of traffic from overwhelming your server because the window is constantly sliding millisecond by millisecond.
+
+**Cons:**
+* **High Memory (RAM) Usage:** Because you must store a unique string and timestamp for *every single request* a user makes, it uses vastly more RAM. (If your limit is 10,000 requests per minute, you must store 10,000 strings per user!)
+* **Higher CPU Usage:** Redis has to do more work on every request (scanning the list, removing old items, adding new ones, and counting) compared to just incrementing a simple number (`INCR`).
+
 ---
 
 ## Eviction Policies (What happens when Redis runs out of memory?)
