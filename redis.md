@@ -256,6 +256,17 @@ export const rateLimiter = async (req, res, next) => {
 };
 ```
 
+#### Pros and Cons of Fixed Window
+
+**Pros:**
+* **Incredibly Simple:** It is the easiest to understand and write code for. It only requires one simple Redis command (`INCR`).
+* **Low Memory & CPU:** It only stores a single tiny number (a counter) per user and does no complex math, making it very fast.
+
+**Cons:**
+* **The "Boundary Flaw" (Cheating the Limit):** This is its biggest weakness! If your limit is 100 requests per minute, a hacker could wait until `12:00:59` to send 100 requests. One second later, at `12:01:00`, the clock resets, and they can immediately send *another* 100 requests. They just successfully sent 200 requests in 2 seconds, completely breaking your rules!
+
+---
+
 ### [Bonus] Rate-Limit Headers
 When you rate-limit a client, it is a professional best-practice to send standard HTTP headers in your response indicating their limits. This acts as a "scoreboard" so the client application knows exactly how many requests they can make before getting hit with a `429 Too Many Requests` error.
 
