@@ -241,6 +241,22 @@ app.get('/demo-token-bucket', tokenLimiter, (req, res) => {
     });
 });
 
+import { leakyBucketRateLimiter } from './middlewares/leaky-bucket.js';
+
+// Demo 6: Leaky Bucket Rate Limiter
+// Bucket holds exactly 3 drops. It leaks 1 drop every 2 seconds (0.5 per second).
+const leakyLimiter = leakyBucketRateLimiter({
+    capacity: 3,
+    leakRatePerSecond: 0.5 
+});
+
+app.get('/demo-leaky-bucket', leakyLimiter, (req, res) => {
+    res.json({
+        message: 'Success! You poured 1 drop of water into the bucket.',
+        tip: 'Spam refresh 3 times. On the 4th time the bucket will overflow! Wait 2 seconds for a drop to leak out.'
+    });
+});
+
 app.use(router)
 
 // Error handling middleware

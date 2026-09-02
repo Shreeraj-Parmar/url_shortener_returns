@@ -436,6 +436,77 @@ export const tokenBucketRateLimiter = ({ maxTokens, refillRatePerSecond }) => {
 
 ---
 
+### Advanced: The Leaky Bucket Pattern
+If the Token Bucket is a bucket full of rewards (hearts), the Leaky Bucket is a bucket full of water. It is the exact opposite. It absolutely forbids "bursts" of traffic and forces a steady, constant stream.
+
+#### The "Funnel" Analogy
+Imagine a literal plastic bucket, but someone drilled a tiny hole in the bottom. 
+1. **Pouring water in:** When users visit your website, they pour a drop of water into the top of the bucket.
+2. **Leaking water out:** The hole in the bottom drips water out at a **perfectly constant, steady rate** (e.g., exactly 1 drop per second). This represents your server processing the requests.
+3. **The Overflow:** If users pour water in faster than it drips out, the water level starts to rise. If the bucket fills all the way to the top, and someone tries to pour more water in, it splashes on the floor. (The user is Blocked with "Too Many Requests").
+
+#### Express Middleware Example (Leaky Bucket):
+```javascript
+import redisClient from '../redis/config.js';
+
+export const leakyBucketRateLimiter = ({ capacity, leakRatePerSecond }) => {
+    return async (req, res, next) => {
+        try {
+            const identifier = req.ip || 'unknown';
+            const key = `ratelimit:leaky:${identifier}`;
+            const now = Date.now();
+
+            const bucket = await redisClient.hGetAll(key);
+
+            let water = 0;
+            let lastLeak = now;
+
+            if (Object.keys(bucket).length !== 0) {
+                water = parseFloat(bucket.water);
+                lastLeak = parseInt(bucket.lastLeak);
+
+                // Calculate how much water leaked out of the hole while they waited
+                const secondsPassed = (now - lastLeak) / 1000;
+                const leakedWater = secondsPassed * leakRatePerSecond;
+
+                // Water can't go below 0 (an empty bucket is just empty)
+                water = Math.max(0, water - leakedWater);
+                lastLeak = now;
+            }
+
+            // Can the bucket hold 1 more drop of water?
+            if (water < capacity) {
+                water += 1; // Pour their request into the bucket
+                
+                const multi = redisClient.multi();
+                multi.hSet(key, { water: water.toString(), lastLeak: lastLeak.toString() });
+                multi.expire(key, 120); 
+                await multi.exec();
+                
+                next(); // Allowed!
+            } else {
+                // Blocked! Bucket Overflowed.
+                await redisClient.hSet(key, { water: water.toString(), lastLeak: lastLeak.toString() });
+                return res.status(429).json({ error: 'Bucket Overflowed!' });
+            }
+        } catch (error) {
+            next(); // Fail open
+        }
+    };
+};
+```
+
+#### Pros and Cons of Leaky Bucket
+
+**Pros:**
+* **Perfectly Smooth Traffic:** It guarantees a strict, absolutely constant output rate. This is fantastic for protecting incredibly fragile old servers that will crash if they receive 10 requests at once. It forces traffic into a single-file line.
+
+**Cons:**
+* **No Bursts Allowed:** It is very punishing to normal users. If the bucket is currently full, and a completely new, valid user tries to visit the site, they will be blocked simply because the bucket hasn't drained yet. 
+* **Same Race Conditions:** Just like Token Bucket, doing the math in Node.js instead of a Lua Script inside Redis can lead to race conditions under heavy concurrent load.
+
+---
+
 ## Eviction Policies (What happens when Redis runs out of memory?)
 
 When your Redis server is full, it has to decide which data to delete to make room for new data. This is called an **Eviction Policy**.
